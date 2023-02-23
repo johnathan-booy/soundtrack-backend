@@ -99,6 +99,7 @@ CREATE TABLE lesson_techniques (
     lesson_id int NOT NULL,
     student_technique_id int NOT NULL,
     rating integer DEFAULT 0 CHECK (rating >= 0 AND rating <= 3),
+    notes text,
     FOREIGN KEY (lesson_id) REFERENCES lessons (id),
     FOREIGN KEY (student_technique_id) REFERENCES student_techniques (id)
 );
@@ -109,6 +110,7 @@ CREATE TABLE lesson_repertoire (
     student_repertoire_id int NOT NULL,
     completed boolean DEFAULT FALSE,
     rating integer DEFAULT 0 CHECK (rating >= 0 AND rating <= 3),
+    notes text,
     FOREIGN KEY (lesson_id) REFERENCES lessons (id),
     FOREIGN KEY (student_repertoire_id) REFERENCES student_repertoire (id)
 );
