@@ -16,12 +16,13 @@ function getDatabaseUri() {
 // Speed up bcrypt during tests, since the algorithm safety isn't being tested
 const BCRYPT_WORK_FACTOR = process.env.NODE_ENV === "test" ? 1 : 13;
 
-console.log("-------SoundTrack Config-------".black.bgWhite);
-console.log("SECRET_KEY:".blue, SECRET_KEY.yellow);
-console.log("PORT:".blue, PORT.toString().yellow);
-console.log("BCRYPT_WORK_FACTOR".blue, BCRYPT_WORK_FACTOR);
-console.log("Database:".blue, getDatabaseUri().yellow);
-console.log("-------------------------------".bgWhite);
+if (process.env.NODE_ENV !== "test") {
+	console.log("-------SoundTrack Config-------".black.bgWhite);
+	console.log("SECRET_KEY:".blue, SECRET_KEY.yellow);
+	console.log("PORT:".blue, PORT.toString().yellow);
+	console.log("BCRYPT_WORK_FACTOR".blue, BCRYPT_WORK_FACTOR);
+	console.log("Database:".blue, getDatabaseUri().yellow);
+}
 
 module.exports = {
 	SECRET_KEY,
