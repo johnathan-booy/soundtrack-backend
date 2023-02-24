@@ -18,18 +18,23 @@ beforeEach(commonBeforeEach);
 afterEach(commonAfterEach);
 afterAll(commonAfterAll);
 
+async function sendRequest(endpoint, authToken, data) {
+	return await request(app)
+		.post(endpoint)
+		.set("Authorization", `Bearer ${authToken}`)
+		.send(data);
+}
+
 describe("POST /teachers", () => {
 	it("works for admin", async () => {
-		const resp = await request(app)
-			.post("/teachers")
-			.set("Authorization", `Bearer ${adminToken}`)
-			.send({
-				email: "test@test.com",
-				password: "password",
-				name: "testuser",
-				description: "test description",
-				isAdmin: true,
-			});
+		const data = {
+			email: "test@test.com",
+			password: "password",
+			name: "testuser",
+			description: "test description",
+			isAdmin: true,
+		};
+		const resp = await sendRequest("/teachers", adminToken, data);
 
 		expect(resp.statusCode).toEqual(201);
 		expect(resp.body).toEqual({
@@ -45,66 +50,57 @@ describe("POST /teachers", () => {
 	});
 
 	it("returns bad request with missing fields", async () => {
-		const resp = await request(app)
-			.post("/teachers")
-			.set("Authorization", `Bearer ${adminToken}`)
-			.send({
-				name: "testuser",
-			});
+		const data = {
+			name: "testuser",
+		};
+		const resp = await sendRequest("/teachers", adminToken, data);
 
 		expect(resp.statusCode).toEqual(400);
 	});
 
 	it("returns bad request with invalid data", async () => {
-		const resp = await request(app)
-			.post("/teachers")
-			.set("Authorization", `Bearer ${adminToken}`)
-			.send({
-				email: "NOT_AN_EMAIL",
-				password: "password",
-				name: "testuser",
-				description: "test description",
-				isAdmin: true,
-			});
+		const data = {
+			email: "NOT_AN_EMAIL",
+			password: "password",
+			name: "testuser",
+			description: "test description",
+			isAdmin: true,
+		};
+		const resp = await sendRequest("/teachers", adminToken, data);
 
 		expect(resp.statusCode).toEqual(400);
 	});
 
 	it("returns bad request with duplicate email address", async () => {
-		await request(app)
-			.post("/teachers")
-			.set("Authorization", `Bearer ${adminToken}`)
-			.send({
-				email: "test@test.com",
-				password: "password1",
-				name: "testuser1",
-				description: "test description 1",
-				isAdmin: false,
-			});
-		const resp = await request(app)
-			.post("/teachers")
-			.set("Authorization", `Bearer ${adminToken}`)
-			.send({
-				email: "test@test.com",
-				password: "password1",
-				name: "testuser2",
-				description: "test description 2",
-				isAdmin: false,
-			});
+		const data1 = {
+			email: "test@test.com",
+			password: "password1",
+			name: "testuser1",
+			description: "test description 1",
+			isAdmin: false,
+		};
+		const data2 = {
+			email: "test@test.com",
+			password: "password1",
+			name: "testuser2",
+			description: "test description 2",
+			isAdmin: false,
+		};
+		await sendRequest("/teachers", adminToken, data1);
+		const resp = await sendRequest("/teachers", adminToken, data2);
+
 		expect(resp.statusCode).toEqual(400);
 	});
 
 	it("returns unauthorized for non-admin user", async () => {
-		const resp = await request(app)
-			.post("/teachers")
-			.set("Authorization", `Bearer ${testData.studentToken}`)
-			.send({
-				email: "test@test.com",
-				password: "password",
-				name: "testuser",
-				description: "test description",
-				isAdmin: true,
-			});
+		const data = {
+			email: "test@test.com",
+			password: "password",
+			name: "testuser",
+			description: "test description",
+			isAdmin: true,
+		};
+		const resp = await sendRequest("/teachers", testData.studentToken, data);
 
 		expect(resp.statusCode).toEqual(401);
 	});
