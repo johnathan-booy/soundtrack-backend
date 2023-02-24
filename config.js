@@ -17,7 +17,8 @@ function getDatabaseUri() {
 const BCRYPT_WORK_FACTOR = process.env.NODE_ENV === "test" ? 1 : 13;
 
 if (process.env.NODE_ENV !== "test") {
-	console.log("-------SoundTrack Config-------".black.bgWhite);
+	console.log();
+	console.log();
 	console.log("SECRET_KEY:".blue, SECRET_KEY.yellow);
 	console.log("PORT:".blue, PORT.toString().yellow);
 	console.log("BCRYPT_WORK_FACTOR".blue, BCRYPT_WORK_FACTOR);

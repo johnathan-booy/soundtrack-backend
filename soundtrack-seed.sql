@@ -5,10 +5,11 @@ INSERT INTO skill_levels (name) VALUES
 ('Advanced');
 
 -- TEACHERS
-INSERT INTO teachers (name, email, password, description) VALUES
-('John Doe', 'johndoe@example.com', 'password', 'Experienced piano teacher with over 10 years of teaching experience.'),
-('Jane Smith', 'janesmith@example.com', 'password', 'Professional violinist and music teacher.'),
-('David Lee', 'davidlee@example.com', 'password', 'Experienced guitar teacher and session musician.');
+-- all passwords set to 'password'
+INSERT INTO teachers (id, name, email, password, description, is_admin) VALUES
+(1, 'John Doe', 'johndoe@example.com', 'password', 'Experienced piano teacher with over 10 years of teaching experience.', TRUE),
+(2, 'Jane Smith', 'janesmith@example.com', 'password', 'Professional violinist and music teacher.', FALSE),
+(3, 'David Lee', 'davidlee@example.com', 'password', 'Experienced guitar teacher and session musician.', FALSE);
 
 -- STUDENTS
 INSERT INTO students (name, email, description, skill_level_id, teacher_id) VALUES
