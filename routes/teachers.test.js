@@ -1,31 +1,34 @@
 "use strict";
 
+const { JsonWebTokenError } = require("jsonwebtoken");
 const request = require("supertest");
 
 const app = require("../app");
+const { SECRET_KEY } = require("../config");
 
 const {
-	testData,
 	adminToken,
+	teacherToken,
+	adminId,
+	teacherId,
 	commonBeforeAll,
 	commonBeforeEach,
 	commonAfterEach,
 	commonAfterAll,
-} = require("./_testCommon");
+} = require("../_testCommon");
 
 beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
 afterEach(commonAfterEach);
 afterAll(commonAfterAll);
 
-async function sendRequest(endpoint, authToken, data) {
-	return await request(app)
-		.post(endpoint)
-		.set("Authorization", `Bearer ${authToken}`)
-		.send(data);
-}
-
 describe("POST /teachers", () => {
+	async function sendRequest(endpoint, authToken, data) {
+		return await request(app)
+			.post(endpoint)
+			.set("Authorization", `Bearer ${authToken}`)
+			.send(data);
+	}
 	it("works for admin", async () => {
 		const data = {
 			email: "test@test.com",
@@ -100,7 +103,192 @@ describe("POST /teachers", () => {
 			description: "test description",
 			isAdmin: true,
 		};
-		const resp = await sendRequest("/teachers", testData.studentToken, data);
+		const resp = await sendRequest("/teachers", teacherToken, data);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+
+describe("GET /teachers", () => {
+	it("works for admin", async () => {
+		const resp = await request(app)
+			.get("/teachers")
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			teachers: [
+				{
+					id: adminId,
+					email: "teacher1@example.com",
+					name: "Teacher1",
+					description: "This is a description",
+					isAdmin: true,
+				},
+				{
+					id: teacherId,
+					email: "teacher2@example.com",
+					name: "Teacher2",
+					description: "This is another description",
+					isAdmin: false,
+				},
+			],
+		});
+	});
+
+	it("returns unauthorized for non-admin user", async () => {
+		const resp = await request(app)
+			.get("/teachers")
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+
+describe("GET /teachers/:id", () => {
+	it("works for admin", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${teacherId}`)
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			teacher: {
+				id: teacherId,
+				email: "teacher2@example.com",
+				name: "Teacher2",
+				description: "This is another description",
+				isAdmin: false,
+			},
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${teacherId}`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			teacher: {
+				id: teacherId,
+				email: "teacher2@example.com",
+				name: "Teacher2",
+				description: "This is another description",
+				isAdmin: false,
+			},
+		});
+	});
+
+	it("returns unauthorized for different teacher than id", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${adminId}`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+
+describe("PATCH /teachers/:id", () => {
+	async function sendRequest(endpoint, authToken, data) {
+		return await request(app)
+			.patch(endpoint)
+			.set("Authorization", `Bearer ${authToken}`)
+			.send(data);
+	}
+
+	it("works for admin", async () => {
+		const data = {
+			email: "update@test.com",
+			password: "password",
+			name: "updatedUser",
+			description: "updated description",
+			isAdmin: true,
+		};
+		const resp = await sendRequest(`/teachers/${teacherId}`, adminToken, data);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			teacher: {
+				id: teacherId,
+				email: "update@test.com",
+				name: "updatedUser",
+				description: "updated description",
+				isAdmin: true,
+			},
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		const data = {
+			email: "update@test.com",
+		};
+		const resp = await sendRequest(
+			`/teachers/${teacherId}`,
+			teacherToken,
+			data
+		);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body.teacher.email).toEqual("update@test.com");
+	});
+
+	it("returns bad request with invalid data", async () => {
+		const data = {
+			email: "NOT_AN_EMAIL",
+		};
+		const resp = await sendRequest(`/teachers/${teacherId}`, adminToken, data);
+
+		expect(resp.statusCode).toEqual(400);
+	});
+
+	it("returns bad request with duplicate email address", async () => {
+		const data = {
+			email: "teacher2@example.com",
+		};
+		const resp = await sendRequest(`/teachers/${adminId}`, adminToken, data);
+
+		expect(resp.statusCode).toEqual(400);
+	});
+
+	it("returns unauthorized for different teacher than id", async () => {
+		const data = {
+			email: "test@test.com",
+		};
+		const resp = await sendRequest(`/teachers/${adminId}`, teacherId, data);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+
+describe("DELETE /teachers/:id", () => {
+	it("works for admin", async () => {
+		const resp = await request(app)
+			.delete(`/teachers/${teacherId}`)
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			deleted: teacherId,
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		console.log(teacherId);
+		const resp = await request(app)
+			.delete(`/teachers/${teacherId}`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			deleted: teacherId,
+		});
+	});
+
+	it("returns unauthorized for different teacher than id", async () => {
+		const resp = await request(app)
+			.delete(`/teachers/${adminId}`)
+			.set("Authorization", `Bearer ${teacherToken}`);
 
 		expect(resp.statusCode).toEqual(401);
 	});

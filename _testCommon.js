@@ -1,8 +1,9 @@
 "use strict";
 const bcrypt = require("bcrypt");
 
-const db = require("../db.js");
-const { BCRYPT_WORK_FACTOR } = require("../config");
+const db = require("./db.js");
+const { BCRYPT_WORK_FACTOR } = require("./config");
+const createToken = require("./helpers/createToken.js");
 
 const testIds = {};
 async function commonBeforeAll() {
@@ -33,9 +34,9 @@ async function commonBeforeAll() {
 	// Teachers
 	results = await db.query(
 		`
-    INSERT INTO teachers (id, name, email, password, description)
-    VALUES (1, 'Teacher1', 'teacher1@example.com', $1, 'This is a description'),
-           (2, 'Teacher2', 'teacher2@example.com', $2, 'This is another description')
+    INSERT INTO teachers (id, name, email, password, description, is_admin)
+    VALUES (1, 'Teacher1', 'teacher1@example.com', $1, 'This is a description', TRUE),
+           (2, 'Teacher2', 'teacher2@example.com', $2, 'This is another description', FALSE)
     RETURNING id`,
 		[password1, password2]
 	);
@@ -112,7 +113,24 @@ async function commonAfterAll() {
 	await db.end();
 }
 
+const adminToken = createToken({
+	id: "1",
+	isAdmin: true,
+});
+const teacherToken = createToken({
+	id: "2",
+	isAdmin: false,
+});
+
+const adminId = "1";
+const teacherId = "2";
+
 module.exports = {
+	testIds,
+	adminToken,
+	teacherToken,
+	adminId,
+	teacherId,
 	commonBeforeAll,
 	commonAfterAll,
 	commonBeforeEach,

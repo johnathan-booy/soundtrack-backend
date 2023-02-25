@@ -10,7 +10,7 @@ const {
 	commonBeforeEach,
 	commonAfterEach,
 	commonAfterAll,
-} = require("./_testCommon");
+} = require("../_testCommon");
 
 beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
@@ -20,7 +20,7 @@ afterAll(commonAfterAll);
 describe("POST /auth/token", () => {
 	it("works for existing teacher", async () => {
 		const resp = await request(app).post("/auth/token").send({
-			email: testData.teachers[0].email,
+			email: "teacher1@example.com",
 			password: "password1",
 		});
 
@@ -41,7 +41,7 @@ describe("POST /auth/token", () => {
 
 	it("returns unauthorized for incorrect password", async () => {
 		const resp = await request(app).post("/auth/token").send({
-			email: testData.teachers[0].email,
+			email: "teacher1@example.com",
 			password: "wrongpassword",
 		});
 

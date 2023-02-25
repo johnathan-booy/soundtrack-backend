@@ -1,6 +1,5 @@
 "use strict";
 
-/** Dependencies */
 const express = require("express");
 const Teacher = require("../models/teacher");
 const { BadRequestError } = require("../expressError");
@@ -8,20 +7,21 @@ const teacherRegisterSchema = require("../schemas/teacherRegisterSchema");
 const teacherAuthSchema = require("../schemas/teacherAuthSchema");
 const createToken = require("../helpers/createToken");
 
-/** Initialize express router */
 const router = new express.Router();
 
-/**
-
-/** POST /auth/token
- *
- * User must enter email and password
- *
- * Returns JWT token to authenticate further requests
- *
- * Authorization is not required for this route
- */
 router.post("/token", async function (req, res, next) {
+	/** POST /auth/token
+	 *
+	 * Endpoint to generate a JWT token for a teacher based on their email and password.
+	 *
+	 * User must provide their email and password.
+	 *
+	 * Returns:
+	 * { token }
+	 *
+	 * Authorization is not required for this route.
+	 */
+
 	try {
 		const validatedBody = await teacherAuthSchema.validate(req.body, {
 			abortEarly: false,
@@ -39,15 +39,19 @@ router.post("/token", async function (req, res, next) {
 	}
 });
 
-/**POST /auth/register
- *
- * User must enter {email, password, name} and optionally include description
- *
- * Returns JWT token to authenticate further requests
- *
- * Authorization is not required for this route
- */
 router.post("/register", async function (req, res, next) {
+	/** POST /auth/register
+	 *
+	 * Endpoint to register a new teacher by entering their email, password, and name.
+	 *
+	 * User may also optionally include a description.
+	 *
+	 * Returns:
+	 * { token }
+	 *
+	 * Authorization is not required for this route.
+	 */
+
 	try {
 		const validatedBody = await teacherRegisterSchema.validate(req.body, {
 			abortEarly: false,

@@ -6,27 +6,27 @@ const Teacher = require("../models/teacher");
 const { BadRequestError } = require("../expressError");
 const teacherNewSchema = require("../schemas/teacherNewSchema");
 const createToken = require("../helpers/createToken");
-const { ensureAdmin } = require("../middleware/auth");
+const { ensureAdmin, ensureCorrectUserOrAdmin } = require("../middleware/auth");
+const teacherUpdateSchema = require("../schemas/teacherUpdateSchema");
 
 /** Initialize express router */
 const router = new express.Router();
 
-/**POST /teachers
- *
- * Adds a new teacher,
- *
- * This is not the registration endpoint --- instead this is for admin user to add new users
- *
- * Also, unlike /auth/register, the new teacher can be set as admin
- *
- * Admin must enter {email, password, name} and optionally include {description, isAdmin}
- *
- * Returns:
- * {teacher: {id, name, email, description, isAdmin}, token}
- *
- * Authorization is required: admin
- */
 router.post("/", ensureAdmin, async function (req, res, next) {
+	/** POST /teachers
+	 *
+	 * Endpoint to add a new teacher by an admin user.
+	 *
+	 * Note that this is not the registration endpoint, and unlike the registration endpoint,
+	 * a new teacher can be created with admin privileges.
+	 *
+	 * Admin must enter { email, password, name } and may optionally include { description, isAdmin }.
+	 *
+	 * Returns:
+	 * { teacher: { id, name, email, description, isAdmin }, token }
+	 *
+	 * Authorization is required: admin
+	 */
 	try {
 		const validatedBody = await teacherNewSchema.validate(req.body, {
 			abortEarly: false,
@@ -41,5 +41,94 @@ router.post("/", ensureAdmin, async function (req, res, next) {
 		return next(err);
 	}
 });
+
+router.get("/", ensureAdmin, async function (req, res, next) {
+	/** GET /teachers
+	 *
+	 * Endpoint to get a list of all teachers.
+	 *
+	 * Returns:
+	 * { teachers: [ { id, name, email, description, isAdmin } ] }
+	 *
+	 * Authorization is required: admin
+	 */
+	try {
+		const teachers = await Teacher.getAll();
+		return res.json({ teachers });
+	} catch (err) {
+		return next(err);
+	}
+});
+
+router.get("/:id", ensureCorrectUserOrAdmin, async function (req, res, next) {
+	/** GET /teachers/:id
+	 *
+	 * Endpoint to get information about a teacher by their ID.
+	 *
+	 * Returns:
+	 * { id, name, email, description, isAdmin }
+	 *
+	 * Authorization is required: admin or same teacher as ":id"
+	 */
+	try {
+		const teacher = await Teacher.get(req.params.id);
+		return res.json({ teacher });
+	} catch (err) {
+		return next(err);
+	}
+});
+
+router.patch("/:id", ensureCorrectUserOrAdmin, async function (req, res, next) {
+	/** PATCH /teachers/:id
+	 *
+	 * Endpoint to update a teacher's information.
+	 *
+	 * This is a "partial update", meaning it is not necessary to include all fields. Only the fields
+	 * provided in the request will be updated.
+	 *
+	 * Data can include: { name, email, password, description, isAdmin }
+	 *
+	 * Returns:
+	 * { id, name, email, description, isAdmin }
+	 *
+	 * @throws {NotFoundError} if `id` is invalid
+	 *
+	 * Authorization is required: admin or same teacher as ":id"
+	 */
+	try {
+		const validatedBody = await teacherUpdateSchema.validate(req.body, {
+			abortEarly: false,
+		});
+		const teacher = await Teacher.update(req.params.id, validatedBody);
+		return res.json({ teacher });
+	} catch (err) {
+		if (err.name === "ValidationError") {
+			return next(new BadRequestError(err.errors));
+		}
+		return next(err);
+	}
+});
+
+router.delete(
+	"/:id",
+	ensureCorrectUserOrAdmin,
+	async function (req, res, next) {
+		/** DELETE /teachers/:id
+		 *
+		 * Endpoint to delete a teacher by their ID.
+		 *
+		 * Returns:
+		 * { deleted: id }
+		 *
+		 * Authorization is required: admin or same teacher as ":id"
+		 */
+		try {
+			await Teacher.delete(req.params.id);
+			return res.json({ deleted: req.params.id });
+		} catch (err) {
+			return next(err);
+		}
+	}
+);
 
 module.exports = router;

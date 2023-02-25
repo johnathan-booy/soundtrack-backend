@@ -13,8 +13,9 @@ CREATE TABLE teachers (
   id varchar(36) DEFAULT gen_random_uuid() PRIMARY KEY,
   password TEXT NOT NULL,
   name varchar(50) NOT NULL,
-  email varchar NOT NULL CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'),
+  email varchar NOT NULL UNIQUE CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'),
   description text,
+  date_added timestamp DEFAULT NOW(),
   is_admin BOOLEAN NOT NULL DEFAULT FALSE
 );
 

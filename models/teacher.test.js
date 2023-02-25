@@ -1,12 +1,18 @@
 const db = require("../db");
-const { BadRequestError, UnauthorizedError } = require("../expressError");
+const {
+	BadRequestError,
+	UnauthorizedError,
+	NotFoundError,
+} = require("../expressError");
+const { update } = require("./teacher");
 const Teacher = require("./teacher");
 const {
+	testIds,
 	commonAfterAll,
 	commonAfterEach,
 	commonBeforeAll,
 	commonBeforeEach,
-} = require("./_testCommon");
+} = require("../_testCommon");
 
 beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
@@ -29,7 +35,7 @@ describe("authenticate", () => {
 			name: "Teacher1",
 			email: "teacher1@example.com",
 			description: "This is a description",
-			isAdmin: false,
+			isAdmin: true,
 		});
 		expect(teacher2).toEqual({
 			id: expect.any(String),
@@ -95,6 +101,120 @@ describe("register", () => {
 			fail();
 		} catch (err) {
 			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+});
+
+// Find all teachers
+describe("findAll", () => {
+	it("works", async () => {
+		const teachers = await Teacher.getAll();
+		expect(teachers).toEqual([
+			{
+				id: testIds.teachers[0],
+				name: "Teacher1",
+				email: "teacher1@example.com",
+				description: "This is a description",
+				isAdmin: true,
+			},
+			{
+				id: testIds.teachers[1],
+				name: "Teacher2",
+				email: "teacher2@example.com",
+				description: "This is another description",
+				isAdmin: false,
+			},
+		]);
+	});
+});
+
+// Get a teacher by id
+describe("get", () => {
+	it("works", async () => {
+		const teachers = await Teacher.get(testIds.teachers[0]);
+		expect(teachers).toEqual({
+			id: testIds.teachers[0],
+			name: "Teacher1",
+			email: "teacher1@example.com",
+			description: "This is a description",
+			isAdmin: true,
+		});
+	});
+	it("throws NotFoundError if teacher id not found", async () => {
+		try {
+			await Teacher.get(-1); // Nonexistent teacher id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+});
+
+// Update a teacher's information
+describe("update", () => {
+	const updateData = {
+		name: "Instructor1",
+		email: "instructor1@example.com",
+		description: "This is still a description",
+		isAdmin: true,
+	};
+
+	it("works", async () => {
+		const teachers = await Teacher.update(testIds.teachers[0], updateData);
+		expect(teachers).toEqual({
+			id: testIds.teachers[0],
+			...updateData,
+		});
+	});
+
+	it("works with password", async () => {
+		const teachers = await Teacher.update(testIds.teachers[0], {
+			password: "newPassword",
+		});
+		expect(teachers).toEqual({
+			id: testIds.teachers[0],
+			name: "Teacher1",
+			email: "teacher1@example.com",
+			description: "This is a description",
+			isAdmin: true,
+		});
+
+		const found = await db.query(
+			`SELECT password FROM teachers WHERE id = '${testIds.teachers[0]}'`
+		);
+		expect(found.rows.length).toEqual(1);
+		expect(found.rows[0].password.startsWith("$2b$")).toEqual(true);
+	});
+
+	it("throws NotFoundError if teacher id not found", async () => {
+		try {
+			await Teacher.get(-1); // Nonexistent teacher id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+});
+
+// Delete a given teacher
+describe("delete", () => {
+	it("works", async () => {
+		await Teacher.delete(testIds.teachers[0]);
+
+		const deletedTeacher = await db.query(
+			`SELECT * FROM teachers WHERE id = $1`,
+			[testIds.teachers[0]]
+		);
+
+		expect(deletedTeacher.rows.length).toBe(0);
+	});
+
+	it("throws NotFoundError if teacher not found", async () => {
+		try {
+			await Teacher.delete(-1); // Nonexistent teacher id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
 		}
 	});
 });
