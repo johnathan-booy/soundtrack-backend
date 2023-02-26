@@ -4,7 +4,6 @@ const {
 	UnauthorizedError,
 	NotFoundError,
 } = require("../expressError");
-const { update } = require("./teacher");
 const Teacher = require("./teacher");
 const {
 	testIds,
@@ -12,6 +11,7 @@ const {
 	commonAfterEach,
 	commonBeforeAll,
 	commonBeforeEach,
+	adminId,
 } = require("../_testCommon");
 
 beforeAll(commonBeforeAll);
@@ -212,6 +212,167 @@ describe("delete", () => {
 	it("throws NotFoundError if teacher not found", async () => {
 		try {
 			await Teacher.delete(-1); // Nonexistent teacher id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+});
+
+// Get all students assigned to a teacher
+describe("getStudents", () => {
+	it("works: no filters", async () => {
+		const students = await Teacher.getStudents(adminId);
+		expect(students).toEqual([
+			{
+				id: testIds.students[0],
+				name: "Student1",
+				email: "student1@example.com",
+				description: "This is a description",
+				skillLevel: "Beginner",
+			},
+			{
+				id: testIds.students[1],
+				name: "Student2",
+				email: "student2@example.com",
+				description: "This is another description",
+				skillLevel: "Intermediate",
+			},
+		]);
+	});
+	it("filters by name", async () => {
+		const students = await Teacher.getStudents(adminId, { name: "Student2" });
+		expect(students).toEqual([
+			{
+				id: testIds.students[1],
+				name: "Student2",
+				email: "student2@example.com",
+				description: "This is another description",
+				skillLevel: "Intermediate",
+			},
+		]);
+	});
+	it("filters by skill level id", async () => {
+		const students = await Teacher.getStudents(adminId, {
+			skillLevelId: testIds.skillLevels[1],
+		});
+		expect(students).toEqual([
+			{
+				id: testIds.students[1],
+				name: "Student2",
+				email: "student2@example.com",
+				description: "This is another description",
+				skillLevel: "Intermediate",
+			},
+		]);
+	});
+	it("filters by name and skill level id", async () => {
+		const students = await Teacher.getStudents(adminId, {
+			name: "Student",
+			skillLevelId: testIds.skillLevels[1],
+		});
+		expect(students).toEqual([
+			{
+				id: testIds.students[1],
+				name: "Student2",
+				email: "student2@example.com",
+				description: "This is another description",
+				skillLevel: "Intermediate",
+			},
+		]);
+	});
+	it("throws NotFoundError if teacher not found", async () => {
+		try {
+			await Teacher.getStudents(-1); // Nonexistent teacher id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+});
+
+// Get all lessons taught by a student
+describe("getLessons", () => {
+	// Object for current lesson
+	const lessonNow = {
+		id: expect.any(Number),
+		studentName: "Student1",
+		date: expect.any(Date),
+	};
+
+	// Object for past lesson (More than 30 days ago)
+	const lessonPast = {
+		id: expect.any(Number),
+		studentName: "Student2",
+		date: expect.any(Date),
+	};
+
+	it("works: defaults to last 30 days", async () => {
+		const lessons = await Teacher.getLessons(adminId);
+		expect(lessons).toEqual([lessonNow]);
+	});
+
+	it("filters by daysAgo", async () => {
+		const lessons = await Teacher.getLessons(adminId, { daysAgo: 60 });
+		expect(lessons).toEqual([lessonNow, lessonPast]);
+	});
+	it("throws NotFoundError if teacher not found", async () => {
+		try {
+			await Teacher.getLessons(-1); // Nonexistent teacher id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+});
+
+// Get all repertoire that were created by a teacher
+describe("getTechniques", () => {
+	it("works", async () => {
+		const techniques = await Teacher.getTechniques(adminId);
+		expect(techniques).toEqual([
+			{
+				id: expect.any(Number),
+				tonic: "C",
+				mode: "Ionian",
+				type: "Scale",
+				description: "This is a scale",
+				dateAdded: expect.any(Date),
+				skillLevel: "Beginner",
+			},
+		]);
+	});
+	it("throws NotFoundError if teacher not found", async () => {
+		try {
+			await Teacher.getTechniques(-1); // Nonexistent teacher id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+});
+
+// Get all repertoire that were created by a teacher
+describe("getRepertoire", () => {
+	it("works", async () => {
+		const repertoire = await Teacher.getRepertoire(adminId);
+		expect(repertoire).toEqual([
+			{
+				id: expect.any(Number),
+				name: "Piece1",
+				composer: "Composer1",
+				arranger: "Arranger1",
+				genre: "Classical",
+				sheetMusicUrl: "https://example.com/sheetmusic1",
+				description: "This is a piece",
+				dateAdded: expect.any(Date),
+				skillLevel: "Beginner",
+			},
+		]);
+	});
+	it("throws NotFoundError if teacher not found", async () => {
+		try {
+			await Teacher.getRepertoire(-1); // Nonexistent teacher id
 			fail();
 		} catch (err) {
 			expect(err instanceof NotFoundError).toBeTruthy();

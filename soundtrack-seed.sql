@@ -65,11 +65,11 @@ INSERT INTO student_repertoire (student_id, repertoire_id, completed_at, reviewe
 
 -- LESSONS
 INSERT INTO lessons (student_id, teacher_id, date, notes) VALUES
-(1, 1, '2022-02-01 15:00:00', 'Reviewed scales and practiced Für Elise.'),
-(2, 3, '2022-02-05 16:30:00', 'Learned fingerpicking technique and practiced Hotel California.'),
-(3, 2, '2022-02-08 14:00:00', 'Reviewed Canon in D and worked on intonation.'),
-(4, 2, '2022-02-12 17:00:00', 'Learned vibrato technique and practiced A minor scales.'),
-(5, 1, '2022-02-15 15:00:00', 'Reviewed jazz improvisation and practiced All of Me.');
+(1, 1, NOW() - INTERVAL '1 Days', 'Reviewed scales and practiced Für Elise.'),
+(2, 3, NOW() - INTERVAL '68 Days', 'Learned fingerpicking technique and practiced Hotel California.'),
+(3, 2, NOW() - INTERVAL '5 Days', 'Reviewed Canon in D and worked on intonation.'),
+(4, 2, NOW() - INTERVAL '12 Days', 'Learned vibrato technique and practiced A minor scales.'),
+(5, 1, NOW() - INTERVAL '32 Days', 'Reviewed jazz improvisation and practiced All of Me.');
 
 -- LESSON TECHNIQUES
 INSERT INTO lesson_techniques (lesson_id, student_technique_id, rating) VALUES

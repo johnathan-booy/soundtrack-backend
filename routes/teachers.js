@@ -8,6 +8,8 @@ const teacherNewSchema = require("../schemas/teacherNewSchema");
 const createToken = require("../helpers/createToken");
 const { ensureAdmin, ensureCorrectUserOrAdmin } = require("../middleware/auth");
 const teacherUpdateSchema = require("../schemas/teacherUpdateSchema");
+const studentSearchSchema = require("../schemas/studentSearchSchema");
+const lessonSearchSchema = require("../schemas/lessonSearchSchema");
 
 /** Initialize express router */
 const router = new express.Router();
@@ -125,6 +127,131 @@ router.delete(
 		try {
 			await Teacher.delete(req.params.id);
 			return res.json({ deleted: req.params.id });
+		} catch (err) {
+			return next(err);
+		}
+	}
+);
+
+router.get(
+	"/:id/students",
+	ensureCorrectUserOrAdmin,
+	async function (req, res, next) {
+		/** GET /teachers/:id/students
+		 *
+		 * Endpoint to get a teachers students
+		 *
+		 * Optional filtering - name, skillLevelId
+		 *
+		 * Returns:
+		 * {students: [{id, name, email, description, skillLevel}]}
+		 *
+		 * Authorization is required: admin or same teacher as ":id"
+		 */
+
+		// Get queries
+		const q = req.query;
+		if (q.skillLevelId !== undefined) q.skillLevelId = +q.skillLevelId;
+
+		try {
+			const validatedQuery = await studentSearchSchema.validate(q, {
+				abortEarly: false,
+			});
+
+			const students = await Teacher.getStudents(req.params.id, validatedQuery);
+			return res.json({ students });
+		} catch (err) {
+			if (err.name === "ValidationError") {
+				return next(new BadRequestError(err.errors));
+			}
+			return next(err);
+		}
+	}
+);
+
+router.get(
+	"/:id/lessons",
+	ensureCorrectUserOrAdmin,
+	async function (req, res, next) {
+		/** GET /teachers/:id/lessons
+		 *
+		 * Endpoint to get a teachers lessons
+		 *
+		 * Optional filtering - daysAgo
+		 *
+		 * Returns:
+		 * {lessons: [{id, studentName, date}]}
+		 *
+		 * Authorization is required: admin or same teacher as ":id"
+		 */
+
+		// Get queries
+		const q = req.query;
+		if (q.daysAgo !== undefined) {
+			q.daysAgo = +q.daysAgo;
+		} else {
+			q.daysAgo = 30;
+		}
+
+		try {
+			const validatedQuery = await lessonSearchSchema.validate(q, {
+				abortEarly: false,
+			});
+			const lessons = await Teacher.getLessons(req.params.id, validatedQuery);
+			return res.json({ lessons });
+		} catch (err) {
+			if (err.name === "ValidationError") {
+				return next(new BadRequestError(err.errors));
+			}
+			return next(err);
+		}
+	}
+);
+
+router.get(
+	"/:id/techniques",
+	ensureCorrectUserOrAdmin,
+	async function (req, res, next) {
+		/** GET /teachers/:id/techniques
+		 *
+		 * Endpoint to get a list of techniques a teacher has added
+		 *
+		 * Returns:
+		 * {
+		 * techniques:
+		 * [{id, tonic, mode, type, description, dateAdded, skillLevel}],
+		 * }
+		 *
+		 * Authorization is required: admin or same teacher as ":id"
+		 */
+		try {
+			const techniques = await Teacher.getTechniques(req.params.id);
+			return res.json({ techniques });
+		} catch (err) {
+			return next(err);
+		}
+	}
+);
+
+router.get(
+	"/:id/repertoire",
+	ensureCorrectUserOrAdmin,
+	async function (req, res, next) {
+		/** GET /teachers/:id/repertoire
+		 *
+		 * Endpoint to get a list of repertoire a teacher has added
+		 *
+		 * Returns:
+		 * {
+		 * repertoire:
+		 * [{id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevel}],
+		 * }
+		 *
+		 * Authorization is required: admin or same teacher as ":id"
+		 */
+		try {
+			const repertoire = await Teacher.getRepertoire(req.params.id);
+			return res.json({ repertoire });
 		} catch (err) {
 			return next(err);
 		}

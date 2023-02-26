@@ -15,6 +15,7 @@ const {
 	commonBeforeEach,
 	commonAfterEach,
 	commonAfterAll,
+	testIds,
 } = require("../_testCommon");
 
 beforeAll(commonBeforeAll);
@@ -274,7 +275,6 @@ describe("DELETE /teachers/:id", () => {
 	});
 
 	it("works for same teacher as id", async () => {
-		console.log(teacherId);
 		const resp = await request(app)
 			.delete(`/teachers/${teacherId}`)
 			.set("Authorization", `Bearer ${teacherToken}`);
@@ -288,6 +288,248 @@ describe("DELETE /teachers/:id", () => {
 	it("returns unauthorized for different teacher than id", async () => {
 		const resp = await request(app)
 			.delete(`/teachers/${adminId}`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+
+describe("GET /teachers/:id/students", () => {
+	it("works for admin", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${teacherId}/students`)
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			students: [
+				{
+					id: testIds.students[2],
+					name: "Student3",
+					email: "student3@example.com",
+					description: "This is yet another description",
+					skillLevel: "Advanced",
+				},
+			],
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${teacherId}/students`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			students: [
+				{
+					id: testIds.students[2],
+					name: "Student3",
+					email: "student3@example.com",
+					description: "This is yet another description",
+					skillLevel: "Advanced",
+				},
+			],
+		});
+	});
+
+	it("filters name", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${adminId}/students`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.query({ name: "Student2" });
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			students: [
+				{
+					id: testIds.students[1],
+					name: "Student2",
+					email: "student2@example.com",
+					description: "This is another description",
+					skillLevel: "Intermediate",
+				},
+			],
+		});
+	});
+
+	it("returns unauthorized for different teacher than id", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${adminId}/students`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+describe("GET /teachers/:id/lessons", () => {
+	it("works for admin", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${teacherId}/lessons`)
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			lessons: [
+				{
+					id: testIds.lessons[2],
+					studentName: "Student3",
+					date: expect.any(String),
+				},
+			],
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${teacherId}/lessons`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			lessons: [
+				{
+					id: testIds.lessons[2],
+					studentName: "Student3",
+					date: expect.any(String),
+				},
+			],
+		});
+	});
+
+	it("filters daysAgo", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${adminId}/lessons`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.query({ daysAgo: 60 });
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			lessons: [
+				{
+					id: expect.any(Number),
+					studentName: "Student1",
+					date: expect.any(String),
+				},
+				{
+					id: expect.any(Number),
+					studentName: "Student2",
+					date: expect.any(String),
+				},
+			],
+		});
+	});
+
+	it("returns unauthorized for different teacher than id", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${adminId}/lessons`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+
+describe("GET /teachers/:id/techniques", () => {
+	it("works for admin", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${teacherId}/techniques`)
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			techniques: [
+				{
+					id: testIds.techniques[1],
+					tonic: "D",
+					mode: "Dorian",
+					type: "Scale",
+					description: "This is another scale",
+					dateAdded: expect.any(String),
+					skillLevel: "Intermediate",
+				},
+			],
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${teacherId}/techniques`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			techniques: [
+				{
+					id: testIds.techniques[1],
+					tonic: "D",
+					mode: "Dorian",
+					type: "Scale",
+					description: "This is another scale",
+					dateAdded: expect.any(String),
+					skillLevel: "Intermediate",
+				},
+			],
+		});
+	});
+
+	it("returns unauthorized for different teacher than id", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${adminId}/techniques`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+
+describe("GET /teachers/:id/repertoire", () => {
+	it("works for admin", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${teacherId}/repertoire`)
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			repertoire: [
+				{
+					id: testIds.repertoire[1],
+					name: "Piece2",
+					composer: "Composer2",
+					arranger: null,
+					genre: "Pop",
+					sheetMusicUrl: "https://example.com/sheetmusic2",
+					description: "This is another piece",
+					dateAdded: expect.any(String),
+					skillLevel: "Intermediate",
+				},
+			],
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${teacherId}/repertoire`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			repertoire: [
+				{
+					id: testIds.repertoire[1],
+					name: "Piece2",
+					composer: "Composer2",
+					arranger: null,
+					genre: "Pop",
+					sheetMusicUrl: "https://example.com/sheetmusic2",
+					description: "This is another piece",
+					dateAdded: expect.any(String),
+					skillLevel: "Intermediate",
+				},
+			],
+		});
+	});
+
+	it("returns unauthorized for different teacher than id", async () => {
+		const resp = await request(app)
+			.get(`/teachers/${adminId}/repertoire`)
 			.set("Authorization", `Bearer ${teacherToken}`);
 
 		expect(resp.statusCode).toEqual(401);

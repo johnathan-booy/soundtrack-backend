@@ -46,7 +46,8 @@ async function commonBeforeAll() {
 	results = await db.query(`
     INSERT INTO students (name, email, description, skill_level_id, teacher_id)
     VALUES ('Student1', 'student1@example.com', 'This is a description', ${testIds.skillLevels[0]}, ${testIds.teachers[0]}),
-           ('Student2', 'student2@example.com', 'This is another description', ${testIds.skillLevels[1]}, ${testIds.teachers[1]})
+           ('Student2', 'student2@example.com', 'This is another description', ${testIds.skillLevels[1]}, ${testIds.teachers[0]}),
+           ('Student3', 'student3@example.com', 'This is yet another description', ${testIds.skillLevels[2]}, ${testIds.teachers[1]})
     RETURNING id`);
 	testIds.students = [...results.rows.map((r) => r.id)];
 
@@ -86,7 +87,8 @@ async function commonBeforeAll() {
 	results = await db.query(`
     INSERT INTO lessons (student_id, teacher_id, date, notes)
     VALUES (${testIds.students[0]}, ${testIds.teachers[0]}, NOW(), 'This is a note'),
-           (${testIds.students[1]}, ${testIds.teachers[1]}, NOW(), 'This is another note')
+           (${testIds.students[1]}, ${testIds.teachers[0]}, (NOW() - INTERVAL '32 days'), 'This is another note'),
+           (${testIds.students[2]}, ${testIds.teachers[1]}, NOW(), 'This is yet another note')
     RETURNING id`);
 	testIds.lessons = [...results.rows.map((r) => r.id)];
 
