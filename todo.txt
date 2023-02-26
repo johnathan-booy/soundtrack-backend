@@ -1,0 +1,2 @@
+use err.code for email duplication in teacher module
+

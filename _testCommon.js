@@ -88,7 +88,8 @@ async function commonBeforeAll() {
     INSERT INTO lessons (student_id, teacher_id, date, notes)
     VALUES (${testIds.students[0]}, ${testIds.teachers[0]}, NOW(), 'This is a note'),
            (${testIds.students[1]}, ${testIds.teachers[0]}, (NOW() - INTERVAL '32 days'), 'This is another note'),
-           (${testIds.students[2]}, ${testIds.teachers[1]}, NOW(), 'This is yet another note')
+           (${testIds.students[2]}, ${testIds.teachers[1]}, NOW(), 'This is yet another note'),
+		   (${testIds.students[0]}, ${testIds.teachers[1]}, (NOW() - INTERVAL '32 days'), 'This is the last note')
     RETURNING id`);
 	testIds.lessons = [...results.rows.map((r) => r.id)];
 

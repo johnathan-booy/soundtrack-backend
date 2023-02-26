@@ -23,7 +23,7 @@ CREATE TABLE teachers (
 CREATE TABLE students (
     id serial PRIMARY KEY,
     name varchar(50) NOT NULL,
-    email varchar NOT NULL CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'),
+    email varchar NOT NULL UNIQUE CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'),
     description text,
     skill_level_id int,
     teacher_id varchar(36),

@@ -8,7 +8,6 @@ const {
 	UnauthorizedError,
 	NotFoundError,
 } = require("../expressError");
-const { is } = require("../schemas/teacherRegisterSchema");
 const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
 
 /** Functions for teachers */
