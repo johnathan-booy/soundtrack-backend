@@ -9,6 +9,7 @@ const {
 	NotFoundError,
 } = require("../expressError");
 const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
+const handlePostgresError = require("../helpers/handlePostgresError");
 
 /** Functions for teachers */
 class Teacher {
@@ -70,27 +71,23 @@ class Teacher {
 		description,
 		isAdmin = false,
 	}) {
-		const checkForDuplicate = await db.query(
-			`SELECT email FROM teachers WHERE email = $1`,
-			[email]
-		);
-		if (checkForDuplicate.rows[0]) {
-			throw new BadRequestError(`Email already exists: ${email}`);
-		}
+		try {
+			const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
 
-		const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
-
-		const results = await db.query(
-			`INSERT INTO teachers
+			const results = await db.query(
+				`INSERT INTO teachers
             (email, password, name, description, is_admin)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING id, email, name, description, is_admin AS "isAdmin"`,
-			[email, hashedPassword, name, description, isAdmin]
-		);
+				[email, hashedPassword, name, description, isAdmin]
+			);
 
-		const teacher = results.rows[0];
+			const teacher = results.rows[0];
 
-		return teacher;
+			return teacher;
+		} catch (err) {
+			handlePostgresError(err);
+		}
 	}
 
 	/** Get all teachers
@@ -151,26 +148,17 @@ class Teacher {
 	 * If the inputs aren't validated, a serious security risk would be opened.
 	 */
 	static async update(id, data) {
-		if (data.email) {
-			const checkForDuplicate = await db.query(
-				`SELECT email FROM teachers WHERE email = $1`,
-				[data.email]
-			);
-			if (checkForDuplicate.rows[0]) {
-				throw new BadRequestError(`Email already exists: ${data.email}`);
+		try {
+			if (data.password) {
+				data.password = await bcrypt.hash(data.password, BCRYPT_WORK_FACTOR);
 			}
-		}
 
-		if (data.password) {
-			data.password = await bcrypt.hash(data.password, BCRYPT_WORK_FACTOR);
-		}
+			const { setCols, values } = sqlForPartialUpdate(data, {
+				isAdmin: "is_admin",
+			});
+			const idVarIdx = values.length + 1;
 
-		const { setCols, values } = sqlForPartialUpdate(data, {
-			isAdmin: "is_admin",
-		});
-		const idVarIdx = values.length + 1;
-
-		const querySql = `
+			const querySql = `
 						UPDATE teachers
 						SET ${setCols}
 						WHERE id = $${idVarIdx}
@@ -181,13 +169,16 @@ class Teacher {
 							description,
 							is_admin AS "isAdmin"`;
 
-		const result = await db.query(querySql, [...values, id]);
-		const teacher = result.rows[0];
+			const result = await db.query(querySql, [...values, id]);
+			const teacher = result.rows[0];
 
-		if (!teacher) throw new NotFoundError(`No teacher found with id: ${id}`);
+			if (!teacher) throw new NotFoundError(`No teacher found with id: ${id}`);
 
-		delete teacher.password;
-		return teacher;
+			delete teacher.password;
+			return teacher;
+		} catch (err) {
+			handlePostgresError(err);
+		}
 	}
 
 	/** Delete given teacher from database; returns undefined

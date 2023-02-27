@@ -1,5 +1,6 @@
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
+const handlePostgresError = require("../helpers/handlePostgresError");
 
 class SkillLevel {
 	/** Create a new skill level with the given name. Returns the new skill level object.
@@ -7,11 +8,15 @@ class SkillLevel {
 	 * @throws {BadRequestError} If the `name` already exists
 	 */
 	static async create(name) {
-		const result = await db.query(
-			`INSERT INTO skill_levels (name) VALUES ($1) RETURNING id, name`,
-			[name]
-		);
-		return result.rows[0];
+		try {
+			const result = await db.query(
+				`INSERT INTO skill_levels (name) VALUES ($1) RETURNING id, name`,
+				[name]
+			);
+			return result.rows[0];
+		} catch (err) {
+			handlePostgresError(err);
+		}
 	}
 
 	/** Retrieve a skill level by ID. Returns the skill level object.

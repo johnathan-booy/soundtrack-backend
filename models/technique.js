@@ -1,5 +1,6 @@
 const db = require("../db");
 const { NotFoundError, BadRequestError } = require("../expressError");
+const handlePostgresError = require("../helpers/handlePostgresError");
 const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
 
 class Technique {
@@ -73,9 +74,6 @@ class Technique {
 		teacherId,
 	}) {
 		try {
-			if (!tonic || !mode || !type) {
-				throw new BadRequestError("Tonic, mode, and type cannot be null.");
-			}
 			if (!teacherId) throw new BadRequestError("teacherId is required");
 
 			const res = await db.query(
@@ -88,11 +86,7 @@ class Technique {
 			);
 			return res.rows[0];
 		} catch (err) {
-			if (err.code === "23505") {
-				throw new BadRequestError(`Duplicate technique`);
-			} else {
-				throw err;
-			}
+			handlePostgresError(err);
 		}
 	}
 
@@ -140,17 +134,7 @@ class Technique {
 
 			return technique;
 		} catch (err) {
-			if (err.code === "23505") {
-				throw new BadRequestError(`Duplicate technique for teacher`);
-			} else if (err.code === "23502" && err.message.includes("tonic")) {
-				throw new BadRequestError("Tonic cannot be null");
-			} else if (err.code === "23502" && err.message.includes("mode")) {
-				throw new BadRequestError("Mode cannot be null");
-			} else if (err.code === "23502" && err.message.includes("type")) {
-				throw new BadRequestError("Type cannot be null");
-			} else {
-				throw err;
-			}
+			handlePostgresError(err);
 		}
 	}
 
