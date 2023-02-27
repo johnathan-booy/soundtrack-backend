@@ -110,33 +110,54 @@ class Technique {
 			});
 			const idVarIdx = values.length + 1;
 
-			const querySql = `
-        UPDATE techniques AS t
-        SET ${setCols}
-        FROM skill_levels AS sl
-        WHERE sl.id = t.skill_level_id AND t.id = $${idVarIdx}
-        RETURNING
-          t.id,
-          t.tonic,
-          t.mode,
-          t.type,
-          t.description,
-          sl.name AS "skillLevel",
-          t.teacher_id AS "teacherId",
-          t.date_added AS "dateAdded"
-      `;
+			// Step 1: Update the technique item without the skillLevel field
+			let querySql = `
+            UPDATE techniques AS t
+            SET ${setCols}
+            WHERE t.id = $${idVarIdx}
+            RETURNING
+              t.id,
+              t.tonic,
+              t.mode,
+              t.type,
+              t.description,
+              t.date_added AS "dateAdded",
+              t.skill_level_id AS "skillLevelId",
+              t.teacher_id AS "teacherId"
+          `;
+			let result = await db.query(querySql, [...values, id]);
+			let technique = result.rows[0];
 
-			const result = await db.query(querySql, [...values, id]);
-			const technique = result.rows[0];
-
-			if (!technique)
+			if (!technique) {
 				throw new NotFoundError(`No technique found with id: ${id}`);
+			}
+
+			// Step 2: Query the database again to get the updated technique item
+			// with the skillLevel field joined from the skill_levels table
+			querySql = `
+            SELECT
+              t.id,
+              t.tonic,
+              t.mode,
+              t.type,
+              t.description,
+              t.date_added AS "dateAdded",
+              sl.name AS "skillLevel",
+              t.teacher_id AS "teacherId"
+            FROM
+              techniques AS t
+              JOIN skill_levels AS sl ON sl.id = t.skill_level_id
+            WHERE t.id = $1
+          `;
+			result = await db.query(querySql, [id]);
+			technique = result.rows[0];
 
 			return technique;
 		} catch (err) {
 			handlePostgresError(err);
 		}
 	}
+	q;
 
 	/**
 	 * Delete the technique with the given id.
