@@ -43,9 +43,11 @@ CREATE TABLE techniques (
     date_added timestamp DEFAULT NOW(),
     skill_level_id int,
     teacher_id varchar(36),
+    CONSTRAINT unique_technique UNIQUE (tonic, mode, type, teacher_id),
     FOREIGN KEY (skill_level_id) REFERENCES skill_levels (id) ON DELETE SET NULL,
     FOREIGN KEY (teacher_id) REFERENCES teachers (id) ON DELETE SET NULL
 );
+
 
 CREATE TABLE repertoire (
     id serial PRIMARY KEY,
@@ -69,6 +71,8 @@ CREATE TABLE student_techniques (
     completed_at timestamp,
     reviewed_at timestamp,
     review_interval interval,
+    date_added timestamp DEFAULT NOW(),
+    CONSTRAINT unique_student_technique UNIQUE (student_id, technique_id),
     FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
     FOREIGN KEY (technique_id) REFERENCES techniques (id) ON DELETE CASCADE
 );
@@ -80,6 +84,8 @@ CREATE TABLE student_repertoire (
     completed_at timestamp,
     reviewed_at timestamp,
     review_interval interval,
+    date_added timestamp DEFAULT NOW(),
+    CONSTRAINT unique_student_repertoire UNIQUE (student_id, repertoire_id),
     FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
     FOREIGN KEY (repertoire_id) REFERENCES repertoire (id) ON DELETE CASCADE
 );

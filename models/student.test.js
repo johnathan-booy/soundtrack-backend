@@ -246,56 +246,382 @@ describe("getLessons", () => {
 	});
 });
 
-// Get all repertoire that were created by a teacher
-// describe("getTechniques", () => {
-// 	it("works", async () => {
-// 		const techniques = await Teacher.getTechniques(adminId);
-// 		expect(techniques).toEqual([
-// 			{
-// 				id: expect.any(Number),
-// 				tonic: "C",
-// 				mode: "Ionian",
-// 				type: "Scale",
-// 				description: "This is a scale",
-// 				dateAdded: expect.any(Date),
-// 				skillLevel: "Beginner",
-// 			},
-// 		]);
-// 	});
-// 	it("throws NotFoundError if teacher not found", async () => {
-// 		try {
-// 			await Teacher.getTechniques(-1); // Nonexistent teacher id
-// 			fail();
-// 		} catch (err) {
-// 			expect(err instanceof NotFoundError).toBeTruthy();
-// 		}
-// 	});
-// });
+describe("getTechniques", () => {
+	const technique1 = {
+		id: expect.any(Number),
+		tonic: "C",
+		mode: "Ionian",
+		type: "Scale",
+		completed: false,
+		lastReview: expect.any(Date),
+		nextReview: expect.any(Date),
+	};
 
-// Get all repertoire that were created by a teacher
-// describe("getRepertoire", () => {
-// 	it("works", async () => {
-// 		const repertoire = await Teacher.getRepertoire(adminId);
-// 		expect(repertoire).toEqual([
-// 			{
-// 				id: expect.any(Number),
-// 				name: "Piece1",
-// 				composer: "Composer1",
-// 				arranger: "Arranger1",
-// 				genre: "Classical",
-// 				sheetMusicUrl: "https://example.com/sheetmusic1",
-// 				description: "This is a piece",
-// 				dateAdded: expect.any(Date),
-// 				skillLevel: "Beginner",
-// 			},
-// 		]);
-// 	});
-// 	it("throws NotFoundError if teacher not found", async () => {
-// 		try {
-// 			await Teacher.getRepertoire(-1); // Nonexistent teacher id
-// 			fail();
-// 		} catch (err) {
-// 			expect(err instanceof NotFoundError).toBeTruthy();
-// 		}
-// 	});
-// });
+	const technique2 = {
+		id: expect.any(Number),
+		tonic: "D",
+		mode: "Dorian",
+		type: "Scale",
+		completed: true,
+		lastReview: expect.any(Date),
+		nextReview: null,
+	};
+
+	it("works: defaults to exclude completed without next review date", async () => {
+		const techniques = await Student.getTechniques(testIds.students[0]);
+		expect(techniques).toEqual([technique1]);
+	});
+
+	it("includes completed techniques without next review date when includeCompleted is true", async () => {
+		const techniques = await Student.getTechniques(testIds.students[0], {
+			includeCompleted: true,
+		});
+		expect(techniques).toEqual([technique1, technique2]);
+	});
+
+	it("throws NotFoundError if student not found", async () => {
+		try {
+			await Student.getTechniques(-1);
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+});
+
+describe("getRepertoire", () => {
+	const repertoire1 = {
+		id: expect.any(Number),
+		name: "Piece1",
+		composer: "Composer1",
+		arranger: "Arranger1",
+		genre: "Classical",
+		sheetMusicUrl: "https://example.com/sheetmusic1",
+		completed: false,
+		lastReview: expect.any(Date),
+		nextReview: expect.any(Date),
+	};
+
+	const repertoire2 = {
+		id: expect.any(Number),
+		name: "Piece2",
+		composer: "Composer2",
+		arranger: null,
+		genre: "Pop",
+		sheetMusicUrl: "https://example.com/sheetmusic2",
+		completed: true,
+		lastReview: expect.any(Date),
+		nextReview: null,
+	};
+
+	it("works: defaults to exclude completed without next review date", async () => {
+		const repertoire = await Student.getRepertoire(testIds.students[0]);
+		expect(repertoire).toEqual([repertoire1]);
+	});
+
+	it("includes completed repertoire without next review date when includeCompleted is true", async () => {
+		const repertoire = await Student.getRepertoire(testIds.students[0], {
+			includeCompleted: true,
+		});
+		expect(repertoire).toEqual([repertoire1, repertoire2]);
+	});
+
+	it("throws NotFoundError if student not found", async () => {
+		try {
+			await Student.getRepertoire(-1);
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+});
+
+describe("addTechnique", function () {
+	test("works", async function () {
+		const techniqueId = testIds.techniques[0];
+		const studentId = testIds.students[1];
+		const reviewIntervalDays = 7;
+
+		const result = await Student.addTechnique({
+			studentId,
+			techniqueId,
+			reviewIntervalDays,
+		});
+
+		expect(result).toEqual({
+			id: expect.any(Number),
+			dateAdded: expect.any(Date),
+			tonic: "C",
+			mode: "Ionian",
+			type: "Scale",
+			description: "This is a scale",
+			skillLevel: "Beginner",
+			teacherId: testIds.teachers[0],
+			completed: false,
+			lastReview: null,
+			nextReview: expect.any(Date),
+		});
+	});
+
+	test("bad request if no such student", async function () {
+		const techniqueId = testIds.techniques[0];
+		const studentId = -1;
+		const reviewIntervalDays = 7;
+
+		try {
+			await Student.addTechnique({
+				studentId,
+				techniqueId,
+				reviewIntervalDays,
+			});
+			fail();
+		} catch (err) {
+			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+
+	test("bad request if no such technique", async function () {
+		const techniqueId = -1;
+		const studentId = testIds.students[0];
+		const reviewIntervalDays = 7;
+
+		try {
+			await Student.addTechnique({
+				studentId,
+				techniqueId,
+				reviewIntervalDays,
+			});
+			fail();
+		} catch (err) {
+			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+
+	test("bad request if review interval is not a number", async function () {
+		const techniqueId = testIds.techniques[0];
+		const studentId = testIds.students[0];
+		const reviewIntervalDays = "not a number";
+
+		try {
+			await Student.addTechnique({
+				studentId,
+				techniqueId,
+				reviewIntervalDays,
+			});
+			fail();
+		} catch (err) {
+			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+
+	test("bad request if technique is already assigned to the student", async function () {
+		const techniqueId = testIds.techniques[0];
+		const studentId = testIds.students[0];
+		const reviewIntervalDays = 7;
+
+		try {
+			await Student.addTechnique({
+				studentId,
+				techniqueId,
+				reviewIntervalDays,
+			});
+
+			// Adding the technique again should throw an error
+			await Student.addTechnique({
+				studentId,
+				techniqueId,
+				reviewIntervalDays,
+			});
+			fail();
+		} catch (err) {
+			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+});
+
+describe("addRepertoire", function () {
+	test("works", async function () {
+		const repertoireId = testIds.repertoire[0];
+		const studentId = testIds.students[1];
+		const reviewIntervalDays = 7;
+
+		const result = await Student.addRepertoire({
+			studentId,
+			repertoireId,
+			reviewIntervalDays,
+		});
+		expect(result).toEqual({
+			id: expect.any(Number),
+			dateAdded: expect.any(Date),
+			name: "Piece1",
+			composer: "Composer1",
+			arranger: "Arranger1",
+			genre: "Classical",
+			sheetMusicUrl: "https://example.com/sheetmusic1",
+			description: "This is a piece",
+			skillLevel: "Beginner",
+			teacherId: testIds.teachers[0],
+			completed: false,
+			lastReview: null,
+			nextReview: expect.any(Date),
+		});
+	});
+
+	test("bad request if no such student", async function () {
+		const repertoireId = testIds.repertoire[0];
+		const studentId = -1;
+		const reviewIntervalDays = 7;
+
+		try {
+			await Student.addRepertoire({
+				studentId,
+				repertoireId,
+				reviewIntervalDays,
+			});
+			fail();
+		} catch (err) {
+			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+
+	test("bad request if no such repertoire", async function () {
+		const repertoireId = -1;
+		const studentId = testIds.students[0];
+		const reviewIntervalDays = 7;
+
+		try {
+			await Student.addRepertoire({
+				studentId,
+				repertoireId,
+				reviewIntervalDays,
+			});
+			fail();
+		} catch (err) {
+			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+
+	test("bad request if review interval is not a number", async function () {
+		const repertoireId = testIds.repertoire[0];
+		const studentId = testIds.students[0];
+		const reviewIntervalDays = "not a number";
+
+		try {
+			await Student.addRepertoire({
+				studentId,
+				repertoireId,
+				reviewIntervalDays,
+			});
+			fail();
+		} catch (err) {
+			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+
+	test("bad request if repertoire is already assigned to the student", async function () {
+		const repertoireId = testIds.repertoire[0];
+		const studentId = testIds.students[0];
+		const reviewIntervalDays = 7;
+
+		try {
+			await Student.addRepertoire({
+				studentId,
+				repertoireId,
+				reviewIntervalDays,
+			});
+
+			// Adding the repertoire again should throw an error
+			await Student.addRepertoire({
+				studentId,
+				repertoireId,
+				reviewIntervalDays,
+			});
+			fail();
+		} catch (err) {
+			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+});
+
+describe("deleteTechnique", () => {
+	test("works", async () => {
+		await Student.deleteTechnique(testIds.students[0], testIds.techniques[0]);
+
+		const deletedTechnique = await db.query(
+			`SELECT * FROM student_techniques WHERE student_id = $1 AND technique_id = $2`,
+			[testIds.students[0], testIds.techniques[0]]
+		);
+
+		expect(deletedTechnique.rows.length).toBe(0);
+	});
+
+	test("throws NotFoundError if technique not assigned to student", async () => {
+		try {
+			await Student.deleteTechnique(testIds.students[1], testIds.techniques[0]); // Technique not assigned to student
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+
+	it("throws NotFoundError if technique not found", async () => {
+		try {
+			await Student.deleteTechnique(testIds.students[0], -1); // Nonexistent technique id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+
+	it("throws NotFoundError if student not found", async () => {
+		try {
+			await Student.deleteTechnique(-1, testIds.techniques[0]); // Nonexistent student id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+});
+
+describe("deleteRepertoire", () => {
+	it("works", async () => {
+		await Student.deleteRepertoire(testIds.students[0], testIds.repertoire[0]);
+
+		const deletedRepertoire = await db.query(
+			`SELECT * FROM student_repertoire WHERE student_id = $1 AND repertoire_id = $2`,
+			[testIds.students[0], testIds.repertoire[0]]
+		);
+
+		expect(deletedRepertoire.rows.length).toBe(0);
+	});
+
+	test("throws NotFoundError if repertoire not assigned to student", async () => {
+		try {
+			await Student.deleteRepertoire(
+				testIds.students[1],
+				testIds.repertoire[0]
+			); //Repertoire not assigned to student
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+
+	it("throws NotFoundError if repertoire not found", async () => {
+		try {
+			await Student.deleteRepertoire(testIds.students[0], -1); // Nonexistent repertoire id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+
+	it("throws NotFoundError if student not found", async () => {
+		try {
+			await Student.deleteRepertoire(-1, testIds.repertoire[0]); // Nonexistent student id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+});

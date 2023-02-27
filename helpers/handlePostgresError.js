@@ -1,7 +1,6 @@
 const { BadRequestError } = require("../expressError");
 
 function handlePostgresError(err) {
-	console.log(err);
 	if (err.code === "23503") {
 		const [_, key] = err.detail.match(/Key \((.*?)\)/);
 		throw new BadRequestError(`'${key}' is invalid`);

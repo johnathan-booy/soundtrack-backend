@@ -70,16 +70,18 @@ async function commonBeforeAll() {
 	// Student Techniques
 	results = await db.query(`
     INSERT INTO student_techniques (student_id, technique_id, completed_at, reviewed_at, review_interval)
-    VALUES (${testIds.students[0]}, ${testIds.techniques[0]}, NOW(), NOW(), '3 months'),
-           (${testIds.students[1]}, ${testIds.techniques[1]}, NOW(), NOW(), '6 months')
+    VALUES (${testIds.students[0]}, ${testIds.techniques[0]}, NULL, NOW(), '1 week'),
+           (${testIds.students[0]}, ${testIds.techniques[1]}, NOW(), NOW(), NULL),
+           (${testIds.students[1]}, ${testIds.techniques[1]}, NOW(), NOW(), '1 month')
     RETURNING id`);
 	testIds.studentTechniques = [...results.rows.map((r) => r.id)];
 
 	// Student Repertoire
 	results = await db.query(`
     INSERT INTO student_repertoire (student_id, repertoire_id, completed_at, reviewed_at, review_interval)
-    VALUES (${testIds.students[0]}, ${testIds.repertoire[0]}, NOW(), NOW(), '1 month'),
-           (${testIds.students[1]}, ${testIds.repertoire[1]}, NOW(), NOW(), '2 months')
+    VALUES (${testIds.students[0]}, ${testIds.repertoire[0]}, NULL, NOW(), '1 week'),
+           (${testIds.students[0]}, ${testIds.repertoire[1]}, NOW(), NOW(), NULL),
+           (${testIds.students[1]}, ${testIds.repertoire[1]}, NOW(), NOW(), '1 month')
     RETURNING id`);
 	testIds.studentRepertoire = [...results.rows.map((r) => r.id)];
 

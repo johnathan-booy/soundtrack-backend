@@ -47,12 +47,13 @@ INSERT INTO repertoire (name, composer, arranger, genre, sheet_music_url, descri
 
 -- STUDENT TECHNIQUES
 INSERT INTO student_techniques (student_id, technique_id, completed_at, reviewed_at, review_interval) VALUES
-(1, 1, '2022-01-01', '2022-01-10', '1 week'),
-(1, 2, '2022-01-15', NULL, NULL),
-(2, 3, '2022-02-01', NULL, NULL),
+(1, 1, NULL, NOW() - INTERVAL '1 Days', '1 week'),
+(1, 2, NOW(), NOW(), '5 weeks'),
+(2, 3, NULL, NULL, NULL),
 (3, 5, '2022-01-10', '2022-01-20', '2 weeks'),
 (4, 2, '2022-02-15', NULL, NULL),
-(5, 1, '2022-01-20', NULL, NULL);
+(5, 1, '2022-01-20', NULL, NULL),
+(1, 3, NOW(), NOW(), NULL);
 
 -- STUDENT REPERTOIRE
 INSERT INTO student_repertoire (student_id, repertoire_id, completed_at, reviewed_at, review_interval) VALUES

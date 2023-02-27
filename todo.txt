@@ -1,2 +1,8 @@
 use err.code for email duplication in teacher module
 
+techniques divided into seperate tables - tonic and mode
+
+Technique.getAll() needs filters
+
+Repertoire unique constraints
+

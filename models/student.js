@@ -9,6 +9,10 @@ const {
 	NotFoundError,
 } = require("../expressError");
 const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
+const SkillLevel = require("./skillLevel");
+const Technique = require("./technique");
+const Repertoire = require("./repertoire");
+const handlePostgresError = require("../helpers/handlePostgresError");
 
 /** Functions for students */
 class Student {
@@ -41,14 +45,7 @@ class Student {
 
 			return student;
 		} catch (err) {
-			if (err.code === "23503") {
-				const [_, key] = err.detail.match(/Key \((.*?)\)/);
-				throw new BadRequestError(`${key} is invalid`);
-			} else if (err.code === "23505") {
-				throw new BadRequestError(`Email already exists.`);
-			} else {
-				throw err;
-			}
+			handlePostgresError(err);
 		}
 	}
 
@@ -101,7 +98,7 @@ class Student {
 	 * This is a "partial update" --- it's fine if `data` doesn't contain
 	 * all the fields; this only changes provided ones.
 	 *
-	 * @param {string} id - student identifier
+	 * @param {Number} id - student identifier
 	 * @param {object} data - can include: { name, email, teacherId, description, skillLevelId }
 	 *
 	 * @returns {object} - { id, email, name, teacherId, description, skillLevelId }
@@ -139,14 +136,7 @@ class Student {
 
 			return student;
 		} catch (err) {
-			if (err.code === "23503") {
-				const [_, key] = err.detail.match(/Key \((.*?)\)/);
-				throw new BadRequestError(`${key} is invalid`);
-			} else if (err.code === "23505") {
-				throw new BadRequestError(`Email already exists.`);
-			} else {
-				throw err;
-			}
+			handlePostgresError(err);
 		}
 	}
 
@@ -175,7 +165,7 @@ class Student {
 	/**
 	 * Get all lessons taken by a student
 	 *
-	 * @param {string} id - student identifier
+	 * @param {Number} id - student identifier
 	 * @param {Object} searchFilters - All optional - {daysAgo: 30}
 	 *
 	 * @returns {Array} [{id, teacherName, date}]
@@ -210,77 +200,268 @@ class Student {
 		whereExpressions.push(`l.student_id = $${queryValues.length}`);
 
 		// Assemble the query
-		if (whereExpressions.length > 0) {
-			query += " WHERE " + whereExpressions.join(" AND ");
-		}
-
+		query += " WHERE " + whereExpressions.join(" AND ");
 		query += " ORDER BY date DESC";
+
+		// Make the request
 		const results = await db.query(query, queryValues);
 
 		return results.rows;
 	}
 
-	// /** Get all techniques that were created by a teacher
-	//  *
-	//  * @param {string} id - teacher identifier
-	//  *
-	//  * @returns {Array} [{id, tonic, mode, type, description, dateAdded, skillLevel}]
-	//  *
-	//  */
-	// static async getTechniques(id) {
-	// 	// Check that the teacher exists
-	// 	await Teacher.get(id);
+	/**
+	 * Get all techniques that have been assigned to a student
+	 *
+	 * @param {String} teacherId - teacher identifier
+	 * @param {Object} searchFilters - { includeCompleted: true }
+	 *
+	 * @returns {Array} [{id, tonic, mode, type, completed, lastReview, nextReview}]
+	 */
+	static async getTechniques(id, searchFilters = {}) {
+		// Check that the teacher exists
+		await Student.get(id);
 
-	// 	const results = await db.query(
-	// 		`
-	// 		SELECT
-	// 			t.id, t.tonic, t.mode, t.type, t.description, t.date_added AS "dateAdded", lvl.name AS "skillLevel"
-	// 		FROM
-	// 			techniques t
-	// 		JOIN
-	// 			skill_levels lvl
-	// 		ON
-	// 			lvl.id = t.skill_level_id
-	// 		WHERE
-	// 			t.teacher_id = $1
-	// 		`,
-	// 		[id]
-	// 	);
+		let query = `
+	   SELECT 	t.id, t.tonic, t.mode, t.type, st.completed_at IS NOT NULL as completed,
+				st.reviewed_at as "lastReview",
+				st.reviewed_at + st.review_interval as "nextReview"
+	   FROM	student_techniques st
+	   JOIN 	techniques t ON st.technique_id = t.id`;
+		let whereExpressions = [];
+		let queryValues = [];
 
-	// 	return results.rows;
-	// }
+		const { includeCompleted } = searchFilters;
 
-	// /** Get all techniques that were created by a teacher
-	//  *
-	//  * @param {string} id - teacher identifier
-	//  *
-	//  * @returns {Array} [{id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevel}]
-	//  *
-	//  */
-	// static async getRepertoire(id) {
-	// 	// Check that the teacher exists
-	// 	await Teacher.get(id);
+		queryValues.push(id);
+		whereExpressions.push(`st.student_id = $${queryValues.length}`);
 
-	// 	const results = await db.query(
-	// 		`
-	// 		SELECT
-	// 			r.id, r.name, r.composer, r.arranger, r.genre,
-	// 			r.sheet_music_url AS "sheetMusicUrl", r.description,
-	// 			r.date_added AS "dateAdded", lvl.name AS "skillLevel"
-	// 		FROM
-	// 			repertoire r
-	// 		JOIN
-	// 			skill_levels lvl
-	// 		ON
-	// 			lvl.id = r.skill_level_id
-	// 		WHERE
-	// 			r.teacher_id = $1
-	// 		`,
-	// 		[id]
-	// 	);
+		if (!includeCompleted) {
+			whereExpressions.push(
+				`st.completed_at IS NULL OR st.reviewed_at + st.review_interval <= NOW()`
+			);
+		}
 
-	// 	return results.rows;
-	// }
+		// Assemble the query
+		if (whereExpressions.length > 0) {
+			query += " WHERE " + whereExpressions.join(" AND ");
+		}
+		query += ` ORDER BY "nextReview"`;
+
+		// Make the request
+		const results = await db.query(query, queryValues);
+
+		return results.rows;
+	}
+
+	/**
+	 * Get all repertoire assigned to a student
+	 *
+	 * @param {Number} id - student identifier
+	 * @param {Object} searchFilters - { includeCompleted: true }
+	 *
+	 * @returns {Array} [{id, name, composer, arranger, genre, sheetMusicUrl, completed, lastReview, nextReview}]
+	 */
+	static async getRepertoire(id, searchFilters = {}) {
+		// Check that the student exists
+		await Student.get(id);
+
+		let query = `
+		SELECT 	r.id, r.name, r.composer, r.arranger, r.genre, r.sheet_music_url as "sheetMusicUrl",
+				sr.completed_at IS NOT NULL as completed, sr.reviewed_at as "lastReview",
+				sr.reviewed_at + sr.review_interval as "nextReview"
+		FROM 	student_repertoire sr
+		JOIN 	repertoire r ON sr.repertoire_id = r.id`;
+
+		let whereExpressions = [];
+		let queryValues = [];
+
+		const { includeCompleted } = searchFilters;
+		queryValues.push(id);
+		whereExpressions.push(`sr.student_id = $${queryValues.length}`);
+
+		if (!includeCompleted) {
+			whereExpressions.push(
+				`sr.completed_at IS NULL OR sr.reviewed_at + sr.review_interval <= NOW()`
+			);
+		}
+
+		// Assemble the query
+		if (whereExpressions.length > 0) {
+			query += " WHERE " + whereExpressions.join(" AND ");
+		}
+		query += ` ORDER BY "nextReview"`;
+
+		// Make the request
+		const results = await db.query(query, queryValues);
+
+		return results.rows;
+	}
+
+	/**
+	 * Adds a technique_id to a student's list of assigned techniques
+	 *
+	 * @param {Object} data - {studentId, techniqueId, reviewIntervalDays}
+	 *
+	 * @returns {Object} {id, dateAdded, tonic, mode, type, description, skillLevel, teacherId, completed, lastReview, nextReview}
+	 *
+	 * @throws {BadRequestError} if 'studentId' or 'techniqueId' doesn't exist
+	 * @throws {BadRequestError} if the combination of 'studentId' and 'techniqueId' already exists in database
+	 * @throws {BadRequestError} if 'reviewIntervalDays' exists but is not a number
+	 */
+	static async addTechnique({ studentId, techniqueId, reviewIntervalDays }) {
+		try {
+			if (typeof reviewIntervalDays !== "number")
+				throw new BadRequestError("'reviewIntervalDays' must be a number");
+			let reviewInterval =
+				reviewIntervalDays !== undefined ? `${reviewIntervalDays} Days` : null;
+
+			// Assign the technique to the student
+			const result = await db.query(
+				`
+				INSERT INTO student_techniques (student_id, technique_id, review_interval)
+				VALUES ($1, $2, $3)
+				RETURNING id, date_added AS "dateAdded", completed_at IS NOT NULL as completed,
+				reviewed_at as "lastReview",
+				CASE
+					WHEN completed_at IS NOT NULL THEN NULL
+					WHEN reviewed_at IS NULL THEN NOW()::DATE
+					ELSE (reviewed_at + review_interval)::DATE
+				END as "nextReview"`,
+				[studentId, techniqueId, reviewInterval]
+			);
+
+			const technique = await Technique.get(techniqueId);
+			const { id, dateAdded, completed, lastReview, nextReview } =
+				result.rows[0];
+			const { tonic, mode, type, description, teacherId, skillLevel } =
+				technique;
+
+			return {
+				id,
+				dateAdded,
+				tonic,
+				mode,
+				type,
+				description,
+				skillLevel,
+				teacherId,
+				completed,
+				lastReview,
+				nextReview,
+			};
+		} catch (err) {
+			handlePostgresError(err);
+		}
+	}
+
+	/**
+	 * Adds a repertoire_id to a student's list of assigned repertoire
+	 *
+	 * @param {Object} data - {studentId, repertoireId, reviewIntervalDays}
+	 *
+	 * @returns {Object} {id, dateAdded, name, composer, arranger, genre, sheetMusicUrl, description, skillLevel, teacherId, completed, lastReview, nextReview}
+	 *
+	 * @throws {BadRequestError} if 'studentId' or 'repertoireId' doesn't exist
+	 * @throws {BadRequestError} if the combination of 'studentId' and 'repertoireId' already exists in database
+	 * @throws {BadRequestError} if 'reviewIntervalDays' exists but is not a number
+	 */
+	static async addRepertoire({ studentId, repertoireId, reviewIntervalDays }) {
+		try {
+			if (typeof reviewIntervalDays !== "number")
+				throw new BadRequestError("'reviewIntervalDays' must be a number");
+			let reviewInterval =
+				reviewIntervalDays !== undefined ? `${reviewIntervalDays} Days` : null;
+
+			// Assign the repertoire to the student
+			const result = await db.query(
+				`
+					INSERT INTO student_repertoire (student_id, repertoire_id, review_interval)
+					VALUES ($1, $2, $3)
+					RETURNING id, date_added AS "dateAdded", completed_at IS NOT NULL as completed,
+					reviewed_at as "lastReview",
+					CASE
+						WHEN completed_at IS NOT NULL THEN NULL
+						WHEN reviewed_at IS NULL THEN NOW()::DATE
+						ELSE (reviewed_at + review_interval)::DATE
+					END as "nextReview"`,
+				[studentId, repertoireId, reviewInterval]
+			);
+
+			const repertoire = await Repertoire.get(repertoireId);
+			const { id, dateAdded, completed, lastReview, nextReview } =
+				result.rows[0];
+			const {
+				name,
+				composer,
+				arranger,
+				genre,
+				sheetMusicUrl,
+				description,
+				teacherId,
+				skillLevel,
+			} = repertoire;
+
+			return {
+				id,
+				dateAdded,
+				name,
+				composer,
+				arranger,
+				genre,
+				sheetMusicUrl,
+				description,
+				skillLevel,
+				teacherId,
+				completed,
+				lastReview,
+				nextReview,
+			};
+		} catch (err) {
+			handlePostgresError(err);
+		}
+	}
+
+	/**
+	 * Deletes an assigned technique from a student's list of assigned techniques
+	 * @param {Number} studentId - the id of the student
+	 * @param {Number} techniqueId - the id of the technique
+	 * @returns {undefined}
+	 * @throws {NotFoundError} If the technique has not been assigned to the given student
+	 */
+	static async deleteTechnique(studentId, techniqueId) {
+		const result = await db.query(
+			`DELETE FROM student_techniques
+		   WHERE student_id = $1 AND technique_id = $2
+		   RETURNING student_id`,
+			[studentId, techniqueId]
+		);
+		if (result.rows.length === 0) {
+			throw new NotFoundError(
+				`Technique with id ${techniqueId} has not been assigned to student with id ${studentId}`
+			);
+		}
+	}
+
+	/**
+	 * Deletes an assigned repertoire from a student's list of assigned repertoire
+	 * @param {Number} studentId - the id of the student
+	 * @param {Number} repertoireId - the id of the repertoire
+	 * @returns {undefined}
+	 * @throws {NotFoundError} If the repertoire has not been assigned to the given student
+	 */
+	static async deleteRepertoire(studentId, repertoireId) {
+		const result = await db.query(
+			`DELETE FROM student_repertoire
+		   WHERE student_id = $1 AND repertoire_id = $2
+		   RETURNING student_id`,
+			[studentId, repertoireId]
+		);
+		if (result.rows.length === 0) {
+			throw new NotFoundError(
+				`Repertoire with id ${repertoireId} has not been assigned to student with id ${studentId}`
+			);
+		}
+	}
 }
 
 module.exports = Student;
