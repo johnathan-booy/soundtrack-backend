@@ -1,15 +1,8 @@
 "use strict";
 
-const { BCRYPT_WORK_FACTOR } = require("../config");
 const db = require("../db");
-const bcrypt = require("bcrypt");
-const {
-	BadRequestError,
-	UnauthorizedError,
-	NotFoundError,
-} = require("../expressError");
+const { BadRequestError, NotFoundError } = require("../expressError");
 const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
-const SkillLevel = require("./skillLevel");
 const Technique = require("./technique");
 const Repertoire = require("./repertoire");
 const handlePostgresError = require("../helpers/handlePostgresError");

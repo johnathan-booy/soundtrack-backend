@@ -66,12 +66,12 @@ CREATE TABLE repertoire (
 
 CREATE TABLE student_techniques (
     id serial PRIMARY KEY,
-    student_id int NOT NULL,
-    technique_id int NOT NULL,
     completed_at timestamp,
     reviewed_at timestamp,
     review_interval interval,
     date_added timestamp DEFAULT NOW(),
+    student_id int NOT NULL,
+    technique_id int NOT NULL,
     CONSTRAINT unique_student_technique UNIQUE (student_id, technique_id),
     FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
     FOREIGN KEY (technique_id) REFERENCES techniques (id) ON DELETE CASCADE
@@ -79,12 +79,12 @@ CREATE TABLE student_techniques (
 
 CREATE TABLE student_repertoire (
     id serial PRIMARY KEY,
-    student_id int NOT NULL,
-    repertoire_id int NOT NULL,
     completed_at timestamp,
     reviewed_at timestamp,
     review_interval interval,
     date_added timestamp DEFAULT NOW(),
+    student_id int NOT NULL,
+    repertoire_id int NOT NULL,
     CONSTRAINT unique_student_repertoire UNIQUE (student_id, repertoire_id),
     FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
     FOREIGN KEY (repertoire_id) REFERENCES repertoire (id) ON DELETE CASCADE

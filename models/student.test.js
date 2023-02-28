@@ -1,9 +1,5 @@
 const db = require("../db");
-const {
-	BadRequestError,
-	UnauthorizedError,
-	NotFoundError,
-} = require("../expressError");
+const { BadRequestError, NotFoundError } = require("../expressError");
 const {
 	testIds,
 	commonAfterAll,
