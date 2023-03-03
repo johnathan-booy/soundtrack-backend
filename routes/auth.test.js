@@ -17,9 +17,9 @@ beforeEach(commonBeforeEach);
 afterEach(commonAfterEach);
 afterAll(commonAfterAll);
 
-describe("POST /auth/token", () => {
+describe("POST /auth/login", () => {
 	it("works for existing teacher", async () => {
-		const resp = await request(app).post("/auth/token").send({
+		const resp = await request(app).post("/auth/login").send({
 			email: "teacher1@example.com",
 			password: "password1",
 		});
@@ -27,11 +27,12 @@ describe("POST /auth/token", () => {
 		expect(resp.statusCode).toEqual(200);
 		expect(resp.body).toEqual({
 			token: expect.any(String),
+			teacherId: expect.any(String),
 		});
 	});
 
 	it("returns unauthorized for non-existent teacher", async () => {
-		const resp = await request(app).post("/auth/token").send({
+		const resp = await request(app).post("/auth/login").send({
 			email: "nonexistent@test.com",
 			password: "password",
 		});
@@ -40,7 +41,7 @@ describe("POST /auth/token", () => {
 	});
 
 	it("returns unauthorized for incorrect password", async () => {
-		const resp = await request(app).post("/auth/token").send({
+		const resp = await request(app).post("/auth/login").send({
 			email: "teacher1@example.com",
 			password: "wrongpassword",
 		});
@@ -49,13 +50,13 @@ describe("POST /auth/token", () => {
 	});
 
 	it("returns bad request with missing fields", async () => {
-		const resp = await request(app).post("/auth/token").send({});
+		const resp = await request(app).post("/auth/login").send({});
 
 		expect(resp.statusCode).toEqual(400);
 	});
 
 	it("returns bad request with invalid data", async () => {
-		const resp = await request(app).post("/auth/token").send({
+		const resp = await request(app).post("/auth/login").send({
 			email: "NOT_AN_EMAIL",
 			password: "password",
 		});

@@ -9,7 +9,7 @@ const createToken = require("../helpers/createToken");
 
 const router = new express.Router();
 
-router.post("/token", async function (req, res, next) {
+router.post("/login", async function (req, res, next) {
 	/** POST /auth/token
 	 *
 	 * Endpoint to generate a JWT token for a teacher based on their email and password.
@@ -29,8 +29,9 @@ router.post("/token", async function (req, res, next) {
 		const { email, password } = validatedBody;
 
 		const teacher = await Teacher.authenticate(email, password);
+		const { id: teacherId } = teacher;
 		const token = createToken(teacher);
-		return res.json({ token });
+		return res.json({ token, teacherId });
 	} catch (err) {
 		if (err.name === "ValidationError") {
 			return next(new BadRequestError(err));
