@@ -77,6 +77,7 @@ describe("POST /auth/register", () => {
 		expect(resp.statusCode).toEqual(201);
 		expect(resp.body).toEqual({
 			token: expect.any(String),
+			teacherId: expect.any(String),
 		});
 	});
 
