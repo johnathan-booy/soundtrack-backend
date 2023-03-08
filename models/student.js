@@ -6,6 +6,8 @@ const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
 const Technique = require("./technique");
 const Repertoire = require("./repertoire");
 const handlePostgresError = require("../helpers/handlePostgresError");
+const { teacherId } = require("../_testCommon");
+const Teacher = require("./teacher");
 
 /** Functions for students */
 class Student {
@@ -42,20 +44,53 @@ class Student {
 		}
 	}
 
-	/**
-	 * Get all students.
+	/** Get all students
 	 *
-	 * @returns {Array} containing all students with their `id`, `name`, `email`, `description`, `skillLevelId`, and `teacherId`.
+	 * @param {Object} searchFilters - All optional - {teacherId, name, skillLevelId}
+	 *
+	 * @returns {Array} [{id, name, email, description, skillLevel}]
+	 *
 	 */
-	static async getAll() {
-		const results = await db.query(`
-      SELECT
-        id, name, email, description, skill_level_id AS "skillLevelId", teacher_id AS "teacherId"
-      FROM
-        students
-      ORDER BY
-        id
-    `);
+	static async getAll(searchFilters = {}) {
+		let query = `
+					SELECT
+						s.id, s.name, s.email, s.description, lvl.name AS "skillLevel"
+					FROM
+						students s
+					JOIN
+						skill_levels lvl
+					ON
+						lvl.id = s.skill_level_id
+					`;
+		let whereExpressions = [];
+		let queryValues = [];
+
+		const { teacherId, name, skillLevelId } = searchFilters;
+
+		// Add each search time that was provided to the whereExpressions and queryValues
+		if (teacherId) {
+			// Check that the teacher exists
+			await Teacher.get(teacherId);
+
+			queryValues.push(teacherId);
+			whereExpressions.push(`s.teacher_id = $${queryValues.length}`);
+		}
+		if (name) {
+			queryValues.push(`%${name}%`);
+			whereExpressions.push(`s.name ILIKE $${queryValues.length}`);
+		}
+		if (skillLevelId !== undefined) {
+			queryValues.push(skillLevelId);
+			whereExpressions.push(`s.skill_level_id = $${queryValues.length}`);
+		}
+
+		// Assemble the query
+		if (whereExpressions.length > 0) {
+			query += " WHERE " + whereExpressions.join(" AND ");
+		}
+		query += " ORDER BY name";
+
+		const results = await db.query(query, queryValues);
 
 		return results.rows;
 	}

@@ -69,7 +69,7 @@ describe("create", () => {
 });
 
 describe("getAll", () => {
-	it("works", async () => {
+	it("works: no filters", async () => {
 		const students = await Student.getAll();
 		expect(students).toEqual([
 			{
@@ -77,26 +77,92 @@ describe("getAll", () => {
 				name: "Student1",
 				email: "student1@example.com",
 				description: "This is a description",
-				skillLevelId: testIds.skillLevels[0],
-				teacherId: testIds.teachers[0],
+				skillLevel: "Beginner",
 			},
 			{
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
 				description: "This is another description",
-				skillLevelId: testIds.skillLevels[1],
-				teacherId: testIds.teachers[0],
+				skillLevel: "Intermediate",
 			},
 			{
 				id: testIds.students[2],
 				name: "Student3",
 				email: "student3@example.com",
 				description: "This is yet another description",
-				skillLevelId: testIds.skillLevels[2],
-				teacherId: testIds.teachers[1],
+				skillLevel: "Advanced",
 			},
 		]);
+	});
+	it("filters by teacherId", async () => {
+		const students = await Student.getAll({ teacherId: testIds.teachers[0] });
+		expect(students).toEqual([
+			{
+				id: testIds.students[0],
+				name: "Student1",
+				email: "student1@example.com",
+				description: "This is a description",
+				skillLevel: "Beginner",
+			},
+			{
+				id: testIds.students[1],
+				name: "Student2",
+				email: "student2@example.com",
+				description: "This is another description",
+				skillLevel: "Intermediate",
+			},
+		]);
+	});
+	it("filters by name", async () => {
+		const students = await Student.getAll({ name: "Student2" });
+		expect(students).toEqual([
+			{
+				id: testIds.students[1],
+				name: "Student2",
+				email: "student2@example.com",
+				description: "This is another description",
+				skillLevel: "Intermediate",
+			},
+		]);
+	});
+	it("filters by skill level id", async () => {
+		const students = await Student.getAll({
+			skillLevelId: testIds.skillLevels[1],
+		});
+		expect(students).toEqual([
+			{
+				id: testIds.students[1],
+				name: "Student2",
+				email: "student2@example.com",
+				description: "This is another description",
+				skillLevel: "Intermediate",
+			},
+		]);
+	});
+	it("filters by all", async () => {
+		const students = await Student.getAll({
+			teacherId: testIds.teachers[0],
+			name: "Student",
+			skillLevelId: testIds.skillLevels[1],
+		});
+		expect(students).toEqual([
+			{
+				id: testIds.students[1],
+				name: "Student2",
+				email: "student2@example.com",
+				description: "This is another description",
+				skillLevel: "Intermediate",
+			},
+		]);
+	});
+	it("throws NotFoundError if teacher not found", async () => {
+		try {
+			await Student.getAll({ teacherId: -1 }); // Nonexistent teacher id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
 	});
 });
 

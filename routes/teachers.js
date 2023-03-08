@@ -6,7 +6,7 @@ const Teacher = require("../models/teacher");
 const { BadRequestError } = require("../expressError");
 const teacherNewSchema = require("../schemas/teacherNewSchema");
 const createToken = require("../helpers/createToken");
-const { ensureAdmin, ensureCorrectUserOrAdmin } = require("../middleware/auth");
+const { admin, correctTeacherOrAdmin } = require("../middleware/auth");
 const teacherUpdateSchema = require("../schemas/teacherUpdateSchema");
 const studentSearchSchema = require("../schemas/studentSearchSchema");
 const lessonSearchSchema = require("../schemas/lessonSearchSchema");
@@ -14,7 +14,7 @@ const lessonSearchSchema = require("../schemas/lessonSearchSchema");
 /** Initialize express router */
 const router = new express.Router();
 
-router.post("/", ensureAdmin, async function (req, res, next) {
+router.post("/", admin, async function (req, res, next) {
 	/** POST /teachers
 	 *
 	 * Endpoint to add a new teacher by an admin user.
@@ -44,7 +44,7 @@ router.post("/", ensureAdmin, async function (req, res, next) {
 	}
 });
 
-router.get("/", ensureAdmin, async function (req, res, next) {
+router.get("/", admin, async function (req, res, next) {
 	/** GET /teachers
 	 *
 	 * Endpoint to get a list of all teachers.
@@ -62,7 +62,7 @@ router.get("/", ensureAdmin, async function (req, res, next) {
 	}
 });
 
-router.get("/:id", ensureCorrectUserOrAdmin, async function (req, res, next) {
+router.get("/:id", correctTeacherOrAdmin, async function (req, res, next) {
 	/** GET /teachers/:id
 	 *
 	 * Endpoint to get information about a teacher by their ID.
@@ -80,7 +80,7 @@ router.get("/:id", ensureCorrectUserOrAdmin, async function (req, res, next) {
 	}
 });
 
-router.patch("/:id", ensureCorrectUserOrAdmin, async function (req, res, next) {
+router.patch("/:id", correctTeacherOrAdmin, async function (req, res, next) {
 	/** PATCH /teachers/:id
 	 *
 	 * Endpoint to update a teacher's information.
@@ -109,67 +109,27 @@ router.patch("/:id", ensureCorrectUserOrAdmin, async function (req, res, next) {
 	}
 });
 
-router.delete(
-	"/:id",
-	ensureCorrectUserOrAdmin,
-	async function (req, res, next) {
-		/** DELETE /teachers/:id
-		 *
-		 * Endpoint to delete a teacher by their ID.
-		 *
-		 * Returns:
-		 * { deleted: id }
-		 *
-		 * Authorization is required: admin or same teacher as ":id"
-		 */
-		try {
-			await Teacher.delete(req.params.id);
-			return res.json({ deleted: req.params.id });
-		} catch (err) {
-			return next(err);
-		}
+router.delete("/:id", correctTeacherOrAdmin, async function (req, res, next) {
+	/** DELETE /teachers/:id
+	 *
+	 * Endpoint to delete a teacher by their ID.
+	 *
+	 * Returns:
+	 * { deleted: id }
+	 *
+	 * Authorization is required: admin or same teacher as ":id"
+	 */
+	try {
+		await Teacher.delete(req.params.id);
+		return res.json({ deleted: req.params.id });
+	} catch (err) {
+		return next(err);
 	}
-);
-
-router.get(
-	"/:id/students",
-	ensureCorrectUserOrAdmin,
-	async function (req, res, next) {
-		/** GET /teachers/:id/students
-		 *
-		 * Endpoint to get a teachers students
-		 *
-		 * Optional filtering - name, skillLevelId
-		 *
-		 * Returns:
-		 * {students: [{id, name, email, description, skillLevel}]}
-		 *
-		 * Authorization is required: admin or same teacher as ":id"
-		 */
-
-		// Get queries
-		const q = req.query;
-		if (q.skillLevelId !== undefined) q.skillLevelId = +q.skillLevelId;
-
-		try {
-			const validatedQuery = await studentSearchSchema.validate(q, {
-				abortEarly: false,
-			});
-
-			const students = await Teacher.getStudents(req.params.id, validatedQuery);
-			return res.json({ students });
-		} catch (err) {
-			if (err.name === "ValidationError") {
-				return next(new BadRequestError(err.errors));
-			}
-			return next(err);
-		}
-	}
-);
+});
 
 router.get(
 	"/:id/lessons",
-	ensureCorrectUserOrAdmin,
+	correctTeacherOrAdmin,
 	async function (req, res, next) {
 		/** GET /teachers/:id/lessons
 		 *
@@ -208,7 +168,7 @@ router.get(
 
 router.get(
 	"/:id/techniques",
-	ensureCorrectUserOrAdmin,
+	correctTeacherOrAdmin,
 	async function (req, res, next) {
 		/** GET /teachers/:id/techniques
 		 *
@@ -233,7 +193,7 @@ router.get(
 
 router.get(
 	"/:id/repertoire",
-	ensureCorrectUserOrAdmin,
+	correctTeacherOrAdmin,
 	async function (req, res, next) {
 		/** GET /teachers/:id/repertoire
 		 *

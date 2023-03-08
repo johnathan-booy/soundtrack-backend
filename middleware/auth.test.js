@@ -2,15 +2,15 @@
 
 const jwt = require("jsonwebtoken");
 
-const { authenticateJWT } = require("./auth");
+const { authJWT } = require("./auth");
 
 const { SECRET_KEY } = require("../config");
 
-const testJWT = jwt.sign({ username: "test", isAdmin: false }, SECRET_KEY);
-const badJWT = jwt.sign({ username: "test", isAdmin: false }, "wrong");
+const testJWT = jwt.sign({ id: "thisIsAStringId", isAdmin: false }, SECRET_KEY);
+const badJWT = jwt.sign({ id: "thisIsAStringId", isAdmin: false }, "wrong");
 
-describe("authenticateJWT", () => {
-	it("works: via header", () => {
+describe("authJWT", () => {
+	it("should authenticate via header", () => {
 		expect.assertions(2);
 
 		// Set request objects
@@ -20,17 +20,18 @@ describe("authenticateJWT", () => {
 			expect(err).toBeFalsy();
 		};
 
-		// Check authenticateJWT
-		authenticateJWT(req, res, next);
+		// Check authJWT
+		authJWT(req, res, next);
 		expect(res.locals).toEqual({
-			user: {
+			teacher: {
 				iat: expect.any(Number),
-				username: "test",
+				id: "thisIsAStringId",
 				isAdmin: false,
 			},
 		});
 	});
-	it("works: no header", () => {
+
+	it("should not authenticate without header", () => {
 		expect.assertions(2);
 
 		// Set request objects
@@ -40,11 +41,12 @@ describe("authenticateJWT", () => {
 			expect(err).toBeFalsy();
 		};
 
-		// Check authenticateJWT
-		authenticateJWT(req, res, next);
+		// Check authJWT
+		authJWT(req, res, next);
 		expect(res.locals).toEqual({});
 	});
-	it("works: bad header", () => {
+
+	it("should not authenticate with bad header", () => {
 		expect.assertions(2);
 
 		// Set request objects
@@ -54,8 +56,8 @@ describe("authenticateJWT", () => {
 			expect(err).toBeFalsy();
 		};
 
-		// Check authenticateJWT
-		authenticateJWT(req, res, next);
+		// Check authJWT
+		authJWT(req, res, next);
 		expect(res.locals).toEqual({});
 	});
 });

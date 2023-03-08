@@ -4,9 +4,10 @@
 const express = require("express"); // Express framework
 const morgan = require("morgan"); // HTTP request logger middleware
 const cors = require("cors"); // Cross-Origin Resource Sharing middleware
-const { authenticateJWT } = require("./middleware/auth");
+const { authJWT } = require("./middleware/auth");
 const authRoutes = require("./routes/auth");
 const teacherRoutes = require("./routes/teachers");
+const studentRoutes = require("./routes/students");
 const { NotFoundError } = require("./expressError");
 
 const app = express(); // Create new instance of express app
@@ -21,11 +22,12 @@ app.use(morgan("tiny"));
 app.use(express.json());
 
 // Authenticate token for all routes
-app.use(authenticateJWT);
+app.use(authJWT);
 
 // Routers
 app.use("/auth", authRoutes);
 app.use("/teachers", teacherRoutes);
+app.use("/students", studentRoutes);
 
 /** Handle 404 errors -- this matches everything */
 app.use(function (req, res, next) {

@@ -198,58 +198,6 @@ class Teacher {
 		if (!teacher) throw new NotFoundError(`No teacher found with id: ${id}`);
 	}
 
-	/** Get all students assigned to a teacher
-	 *
-	 * @param {string} id - teacher identifier
-	 * @param {Object} searchFilters - All optional - {name, skillLevelId}
-	 *
-	 * @returns {Array} [{id, name, email, description, skillLevel}]
-	 *
-	 */
-	static async getStudents(id, searchFilters = {}) {
-		// Check that the teacher exists
-		await Teacher.get(id);
-
-		let query = `
-                SELECT
-                    s.id, s.name, s.email, s.description, lvl.name AS "skillLevel"
-                FROM
-                    students s
-                JOIN
-                    skill_levels lvl
-                ON
-                    lvl.id = s.skill_level_id
-                `;
-		let whereExpressions = [];
-		let queryValues = [];
-
-		const { name, skillLevelId } = searchFilters;
-
-		// Add each search time that was provided to the whereExpressions and queryValues
-		if (name) {
-			queryValues.push(`%${name}%`);
-			whereExpressions.push(`s.name ILIKE $${queryValues.length}`);
-		}
-		if (skillLevelId !== undefined) {
-			queryValues.push(skillLevelId);
-			whereExpressions.push(`s.skill_level_id = $${queryValues.length}`);
-		}
-
-		// We also need to query by teacher
-		queryValues.push(id);
-		whereExpressions.push(`s.teacher_id = $${queryValues.length}`);
-
-		// Assemble the query
-		if (whereExpressions.length > 0) {
-			query += " WHERE " + whereExpressions.join(" AND ");
-		}
-		query += " ORDER BY name";
-
-		const results = await db.query(query, queryValues);
-
-		return results.rows;
-	}
-
 	/** Get all lessons conducted by a teacher
 	 *
 	 * @param {string} id - teacher identifier

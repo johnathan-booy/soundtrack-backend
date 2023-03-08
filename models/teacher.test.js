@@ -105,8 +105,8 @@ describe("register", () => {
 	});
 });
 
-// Find all teachers
-describe("findAll", () => {
+// Get all teachers
+describe("getAll", () => {
 	it("works", async () => {
 		const teachers = await Teacher.getAll();
 		expect(teachers).toEqual([
@@ -212,78 +212,6 @@ describe("delete", () => {
 	it("throws NotFoundError if teacher not found", async () => {
 		try {
 			await Teacher.delete(-1); // Nonexistent teacher id
-			fail();
-		} catch (err) {
-			expect(err instanceof NotFoundError).toBeTruthy();
-		}
-	});
-});
-
-// Get all students assigned to a teacher
-describe("getStudents", () => {
-	it("works: no filters", async () => {
-		const students = await Teacher.getStudents(adminId);
-		expect(students).toEqual([
-			{
-				id: testIds.students[0],
-				name: "Student1",
-				email: "student1@example.com",
-				description: "This is a description",
-				skillLevel: "Beginner",
-			},
-			{
-				id: testIds.students[1],
-				name: "Student2",
-				email: "student2@example.com",
-				description: "This is another description",
-				skillLevel: "Intermediate",
-			},
-		]);
-	});
-	it("filters by name", async () => {
-		const students = await Teacher.getStudents(adminId, { name: "Student2" });
-		expect(students).toEqual([
-			{
-				id: testIds.students[1],
-				name: "Student2",
-				email: "student2@example.com",
-				description: "This is another description",
-				skillLevel: "Intermediate",
-			},
-		]);
-	});
-	it("filters by skill level id", async () => {
-		const students = await Teacher.getStudents(adminId, {
-			skillLevelId: testIds.skillLevels[1],
-		});
-		expect(students).toEqual([
-			{
-				id: testIds.students[1],
-				name: "Student2",
-				email: "student2@example.com",
-				description: "This is another description",
-				skillLevel: "Intermediate",
-			},
-		]);
-	});
-	it("filters by name and skill level id", async () => {
-		const students = await Teacher.getStudents(adminId, {
-			name: "Student",
-			skillLevelId: testIds.skillLevels[1],
-		});
-		expect(students).toEqual([
-			{
-				id: testIds.students[1],
-				name: "Student2",
-				email: "student2@example.com",
-				description: "This is another description",
-				skillLevel: "Intermediate",
-			},
-		]);
-	});
-	it("throws NotFoundError if teacher not found", async () => {
-		try {
-			await Teacher.getStudents(-1); // Nonexistent teacher id
 			fail();
 		} catch (err) {
 			expect(err instanceof NotFoundError).toBeTruthy();

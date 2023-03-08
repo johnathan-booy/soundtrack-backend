@@ -5,16 +5,16 @@ const { SECRET_KEY } = require("../config");
 const { UnauthorizedError } = require("../expressError");
 
 /**
- * authenticateJWT is a middleware function that checks if a valid token was provided.
- * if the token is present, the token payload is stored on res.locals
- * if the token is absent or invalid, no error should be thrown
+ * Middleware that authenticates a JSON Web Token (JWT).
+ * If a valid token is present in the request header, stores the token payload in res.locals.
+ * If the token is absent or invalid, does not throw an error.
  */
-function authenticateJWT(req, res, next) {
+function authJWT(req, res, next) {
 	try {
 		const authHeader = req.headers && req.headers.authorization;
 		if (authHeader) {
 			const token = authHeader.replace(/^[Bb]earer /, "").trim();
-			res.locals.user = jwt.verify(token, SECRET_KEY);
+			res.locals.teacher = jwt.verify(token, SECRET_KEY);
 		}
 		return next();
 	} catch {
@@ -22,28 +22,26 @@ function authenticateJWT(req, res, next) {
 	}
 }
 
-/** ensureLoggedIn is a middleware placed on routes that require a user to be logged in
- *
- * if not, raises Unauthorized
+/**
+ * Middleware that ensures the teacher is logged in.
+ * If not, throws an UnauthorizedError.
  */
-
-function ensureLoggedIn(req, res, next) {
+function loggedIn(req, res, next) {
 	try {
-		if (!res.locals.user) throw new UnauthorizedError();
+		if (!res.locals.teacher) throw new UnauthorizedError();
 		return next();
 	} catch (err) {
 		return next(err);
 	}
 }
 
-/** Middleware to use when they be logged in as an admin user.
- *
- *  If not, raises Unauthorized.
+/**
+ * Middleware that ensures the teacher is logged in as an admin.
+ * If not, throws an UnauthorizedError.
  */
-
-function ensureAdmin(req, res, next) {
+function admin(req, res, next) {
 	try {
-		if (!res.locals.user || !res.locals.user.isAdmin) {
+		if (!res.locals.teacher || !res.locals.teacher.isAdmin) {
 			throw new UnauthorizedError();
 		}
 		return next();
@@ -52,16 +50,21 @@ function ensureAdmin(req, res, next) {
 	}
 }
 
-/** Middleware to use when they must provide a valid token & be user matching
- *  username provided as route param.
- *
- *  If not, raises Unauthorized.
+/**
+ * Middleware that ensures the teacher is logged in as the correct teacher or an admin.
+ * If not, throws an UnauthorizedError.
  */
-
-function ensureCorrectUserOrAdmin(req, res, next) {
+function correctTeacherOrAdmin(req, res, next) {
 	try {
-		const user = res.locals.user;
-		if (!(user && (user.isAdmin || user.id === req.params.id))) {
+		const teacher = res.locals.teacher;
+		if (
+			!(
+				teacher &&
+				(teacher.isAdmin ||
+					teacher.id === req.params.id ||
+					teacher.id === req.query.teacherId)
+			)
+		) {
 			throw new UnauthorizedError();
 		}
 		return next();
@@ -71,8 +74,8 @@ function ensureCorrectUserOrAdmin(req, res, next) {
 }
 
 module.exports = {
-	authenticateJWT,
-	ensureLoggedIn,
-	ensureAdmin,
-	ensureCorrectUserOrAdmin,
+	authJWT,
+	loggedIn,
+	admin,
+	correctTeacherOrAdmin,
 };
