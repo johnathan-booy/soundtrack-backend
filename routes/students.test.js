@@ -35,21 +35,18 @@ describe("GET /students", () => {
 					id: testIds.students[0],
 					name: "Student1",
 					email: "student1@example.com",
-					description: "This is a description",
 					skillLevel: "Beginner",
 				},
 				{
 					id: testIds.students[1],
 					name: "Student2",
 					email: "student2@example.com",
-					description: "This is another description",
 					skillLevel: "Intermediate",
 				},
 				{
 					id: testIds.students[2],
 					name: "Student3",
 					email: "student3@example.com",
-					description: "This is yet another description",
 					skillLevel: "Advanced",
 				},
 			],
@@ -70,7 +67,6 @@ describe("GET /students", () => {
 					id: testIds.students[2],
 					name: "Student3",
 					email: "student3@example.com",
-					description: "This is yet another description",
 					skillLevel: "Advanced",
 				},
 			],
@@ -91,7 +87,6 @@ describe("GET /students", () => {
 					id: testIds.students[2],
 					name: "Student3",
 					email: "student3@example.com",
-					description: "This is yet another description",
 					skillLevel: "Advanced",
 				},
 			],
@@ -111,7 +106,6 @@ describe("GET /students", () => {
 					id: testIds.students[1],
 					name: "Student2",
 					email: "student2@example.com",
-					description: "This is another description",
 					skillLevel: "Intermediate",
 				},
 			],
@@ -131,7 +125,6 @@ describe("GET /students", () => {
 					id: testIds.students[1],
 					name: "Student2",
 					email: "student2@example.com",
-					description: "This is another description",
 					skillLevel: "Intermediate",
 				},
 			],
@@ -151,6 +144,127 @@ describe("GET /students", () => {
 			.get(`/students`)
 			.set("Authorization", `Bearer ${teacherToken}`)
 			.query({ teacherId: adminId });
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+
+describe("GET /students/:id", () => {
+	it("works for admin", async () => {
+		const resp = await request(app)
+			.get(`/students/${testIds.students[0]}`)
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			student: {
+				id: testIds.students[0],
+				email: "student1@example.com",
+				name: "Student1",
+				description: "This is a description",
+				skillLevel: "Beginner",
+				teacherId: adminId,
+			},
+		});
+	});
+
+	it("works for same teacher as teacherId", async () => {
+		const resp = await request(app)
+			.get(`/students/${testIds.students[2]}`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			student: {
+				id: testIds.students[2],
+				email: "student3@example.com",
+				name: "Student3",
+				description: "This is yet another description",
+				skillLevel: "Advanced",
+				teacherId: teacherId,
+			},
+		});
+	});
+
+	it("returns unauthorized for different teacher than teacherId", async () => {
+		const resp = await request(app)
+			.get(`/students/${testIds.students[0]}`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+
+describe("PATCH /students/:id", () => {
+	it("works for admin", async () => {
+		const data = {
+			email: "update@test.com",
+			name: "updatedUser",
+			description: "updated description",
+			skillLevelId: testIds.skillLevels[0],
+		};
+		const resp = await request(app)
+			.patch(`/students/${testIds.students[2]}`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.send(data);
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			student: {
+				id: testIds.students[2],
+				email: "update@test.com",
+				name: "updatedUser",
+				description: "updated description",
+				teacherId: expect.any(String),
+				skillLevel: "Beginner",
+			},
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		const data = {
+			email: "update@test.com",
+		};
+		const resp = await request(app)
+			.patch(`/students/${testIds.students[2]}`)
+			.set("Authorization", `Bearer ${teacherToken}`)
+			.send(data);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body.student.email).toEqual("update@test.com");
+	});
+
+	it("returns bad request with invalid data", async () => {
+		const data = {
+			email: "NOT_AN_EMAIL",
+		};
+		const resp = await request(app)
+			.patch(`/students/${testIds.students[0]}`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.send(data);
+
+		expect(resp.statusCode).toEqual(400);
+	});
+
+	it("returns bad request with duplicate email address", async () => {
+		const data = {
+			email: "student1@example.com",
+		};
+		const resp = await request(app)
+			.patch(`/students/${testIds.students[2]}`)
+			.set("Authorization", `Bearer ${teacherToken}`)
+			.send(data);
+
+		expect(resp.statusCode).toEqual(400);
+	});
+
+	it("returns unauthorized for different teacher than id", async () => {
+		const data = {
+			email: "test@test.com",
+		};
+		const resp = await request(app)
+			.patch(`/students/${testIds.students[0]}`)
+			.set("Authorization", `Bearer ${teacherToken}`)
+			.send(data);
 
 		expect(resp.statusCode).toEqual(401);
 	});

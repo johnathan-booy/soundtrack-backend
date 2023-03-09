@@ -76,21 +76,18 @@ describe("getAll", () => {
 				id: testIds.students[0],
 				name: "Student1",
 				email: "student1@example.com",
-				description: "This is a description",
 				skillLevel: "Beginner",
 			},
 			{
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
-				description: "This is another description",
 				skillLevel: "Intermediate",
 			},
 			{
 				id: testIds.students[2],
 				name: "Student3",
 				email: "student3@example.com",
-				description: "This is yet another description",
 				skillLevel: "Advanced",
 			},
 		]);
@@ -102,14 +99,12 @@ describe("getAll", () => {
 				id: testIds.students[0],
 				name: "Student1",
 				email: "student1@example.com",
-				description: "This is a description",
 				skillLevel: "Beginner",
 			},
 			{
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
-				description: "This is another description",
 				skillLevel: "Intermediate",
 			},
 		]);
@@ -121,7 +116,6 @@ describe("getAll", () => {
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
-				description: "This is another description",
 				skillLevel: "Intermediate",
 			},
 		]);
@@ -135,7 +129,6 @@ describe("getAll", () => {
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
-				description: "This is another description",
 				skillLevel: "Intermediate",
 			},
 		]);
@@ -151,7 +144,6 @@ describe("getAll", () => {
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
-				description: "This is another description",
 				skillLevel: "Intermediate",
 			},
 		]);
@@ -174,7 +166,7 @@ describe("get", () => {
 			name: "Student1",
 			email: "student1@example.com",
 			description: "This is a description",
-			skillLevelId: testIds.skillLevels[0],
+			skillLevel: "Beginner",
 			teacherId: testIds.teachers[0],
 		});
 	});
@@ -201,7 +193,7 @@ describe("update", () => {
 		const student = await Student.update(testIds.students[0], updateData);
 		expect(student).toEqual({
 			id: testIds.students[0],
-			skillLevelId: testIds.skillLevels[0],
+			skillLevel: "Beginner",
 			...updateData,
 		});
 	});

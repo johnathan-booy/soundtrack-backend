@@ -98,7 +98,9 @@ router.patch("/:id", correctTeacherOrAdmin, async function (req, res, next) {
 	 * Authorization is required: admin or same teacher as ":id"
 	 */
 	try {
-		const validatedBody = req.body;
+		const validatedBody = await teacherUpdateSchema.validate(req.body, {
+			abortEarly: false,
+		});
 		const teacher = await Teacher.update(req.params.id, validatedBody);
 		return res.json({ teacher });
 	} catch (err) {

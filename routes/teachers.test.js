@@ -191,13 +191,6 @@ describe("GET /teachers/:id", () => {
 });
 
 describe("PATCH /teachers/:id", () => {
-	async function sendRequest(endpoint, authToken, data) {
-		return await request(app)
-			.patch(endpoint)
-			.set("Authorization", `Bearer ${authToken}`)
-			.send(data);
-	}
-
 	it("works for admin", async () => {
 		const data = {
 			email: "update@test.com",
@@ -206,7 +199,10 @@ describe("PATCH /teachers/:id", () => {
 			description: "updated description",
 			isAdmin: true,
 		};
-		const resp = await sendRequest(`/teachers/${teacherId}`, adminToken, data);
+		const resp = await request(app)
+			.patch(`/teachers/${teacherId}`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.send(data);
 
 		expect(resp.statusCode).toEqual(200);
 		expect(resp.body).toEqual({
@@ -224,11 +220,10 @@ describe("PATCH /teachers/:id", () => {
 		const data = {
 			email: "update@test.com",
 		};
-		const resp = await sendRequest(
-			`/teachers/${teacherId}`,
-			teacherToken,
-			data
-		);
+		const resp = await request(app)
+			.patch(`/teachers/${teacherId}`)
+			.set("Authorization", `Bearer ${teacherToken}`)
+			.send(data);
 
 		expect(resp.statusCode).toEqual(200);
 		expect(resp.body.teacher.email).toEqual("update@test.com");
@@ -238,7 +233,10 @@ describe("PATCH /teachers/:id", () => {
 		const data = {
 			email: "NOT_AN_EMAIL",
 		};
-		const resp = await sendRequest(`/teachers/${teacherId}`, adminToken, data);
+		const resp = await request(app)
+			.patch(`/teachers/${teacherId}`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.send(data);
 
 		expect(resp.statusCode).toEqual(400);
 	});
@@ -247,7 +245,10 @@ describe("PATCH /teachers/:id", () => {
 		const data = {
 			email: "teacher2@example.com",
 		};
-		const resp = await sendRequest(`/teachers/${adminId}`, adminToken, data);
+		const resp = await request(app)
+			.patch(`/teachers/${adminId}`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.send(data);
 
 		expect(resp.statusCode).toEqual(400);
 	});
@@ -256,7 +257,10 @@ describe("PATCH /teachers/:id", () => {
 		const data = {
 			email: "test@test.com",
 		};
-		const resp = await sendRequest(`/teachers/${adminId}`, teacherId, data);
+		const resp = await request(app)
+			.patch(`/teachers/${adminId}`)
+			.set("Authorization", `Bearer ${teacherToken}`)
+			.send(data);
 
 		expect(resp.statusCode).toEqual(401);
 	});

@@ -48,13 +48,13 @@ class Student {
 	 *
 	 * @param {Object} searchFilters - All optional - {teacherId, name, skillLevelId}
 	 *
-	 * @returns {Array} [{id, name, email, description, skillLevel}]
+	 * @returns {Array} [{id, name, email, skillLevel}]
 	 *
 	 */
 	static async getAll(searchFilters = {}) {
 		let query = `
 					SELECT
-						s.id, s.name, s.email, s.description, lvl.name AS "skillLevel"
+						s.id, s.name, s.email, lvl.name AS "skillLevel"
 					FROM
 						students s
 					JOIN
@@ -104,12 +104,17 @@ class Student {
 	 */
 	static async get(id) {
 		const result = await db.query(
-			`SELECT
-				id, name, email, description, skill_level_id AS "skillLevelId", teacher_id AS "teacherId"
+			`
+			SELECT
+				s.id, s.name, s.email, s.description, lvl.name AS "skillLevel", s.teacher_id AS "teacherId"
 			FROM
-				students
+				students s
+			JOIN
+				skill_levels lvl
+			ON
+				lvl.id = s.skill_level_id
 			WHERE
-				id = $1`,
+				s.id = $1`,
 			[id]
 		);
 
@@ -129,7 +134,7 @@ class Student {
 	 * @param {Number} id - student identifier
 	 * @param {object} data - can include: { name, email, teacherId, description, skillLevelId }
 	 *
-	 * @returns {object} - { id, email, name, teacherId, description, skillLevelId }
+	 * @returns {object} - { id, email, name, teacherId, description, skillLevel }
 	 *
 	 * @throws {NotFoundError} if `id` is invalid
 	 * @throws {BadRequestError} If the `teacherId` or `skillLevelId` does not exist in the database, or the email already exists
@@ -155,7 +160,7 @@ class Student {
 					email,
 					teacher_id AS "teacherId",
 					description,
-					skill_level_id AS "skillLevelId"`;
+					(SELECT name FROM skill_levels WHERE id = students.skill_level_id) AS "skillLevel"`;
 
 			const result = await db.query(querySql, [...values, id]);
 			const student = result.rows[0];
