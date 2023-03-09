@@ -1,15 +1,14 @@
 const yup = require("yup");
 
-const teacherUpdateSchema = yup
+const studentUpdateSchema = yup
 	.object()
 	.shape({
 		email: yup.string().email(),
-		password: yup.string().min(8),
 		name: yup.string().min(2).max(50),
 		description: yup.string(),
-		isAdmin: yup.boolean(),
+		skillLevelId: yup.number(),
 	})
 	.noUnknown()
 	.strict();
 
-module.exports = teacherUpdateSchema;
+module.exports = studentUpdateSchema;
