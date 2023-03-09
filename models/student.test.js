@@ -76,19 +76,19 @@ describe("getAll", () => {
 				id: testIds.students[0],
 				name: "Student1",
 				email: "student1@example.com",
-				skillLevel: "Beginner",
+				skillLevelId: testIds.skillLevels[0],
 			},
 			{
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
-				skillLevel: "Intermediate",
+				skillLevelId: testIds.skillLevels[1],
 			},
 			{
 				id: testIds.students[2],
 				name: "Student3",
 				email: "student3@example.com",
-				skillLevel: "Advanced",
+				skillLevelId: testIds.skillLevels[2],
 			},
 		]);
 	});
@@ -99,13 +99,13 @@ describe("getAll", () => {
 				id: testIds.students[0],
 				name: "Student1",
 				email: "student1@example.com",
-				skillLevel: "Beginner",
+				skillLevelId: testIds.skillLevels[0],
 			},
 			{
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
-				skillLevel: "Intermediate",
+				skillLevelId: testIds.skillLevels[1],
 			},
 		]);
 	});
@@ -116,7 +116,7 @@ describe("getAll", () => {
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
-				skillLevel: "Intermediate",
+				skillLevelId: testIds.skillLevels[1],
 			},
 		]);
 	});
@@ -129,7 +129,7 @@ describe("getAll", () => {
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
-				skillLevel: "Intermediate",
+				skillLevelId: testIds.skillLevels[1],
 			},
 		]);
 	});
@@ -144,7 +144,7 @@ describe("getAll", () => {
 				id: testIds.students[1],
 				name: "Student2",
 				email: "student2@example.com",
-				skillLevel: "Intermediate",
+				skillLevelId: testIds.skillLevels[1],
 			},
 		]);
 	});
@@ -166,7 +166,7 @@ describe("get", () => {
 			name: "Student1",
 			email: "student1@example.com",
 			description: "This is a description",
-			skillLevel: "Beginner",
+			skillLevelId: testIds.skillLevels[0],
 			teacherId: testIds.teachers[0],
 		});
 	});
@@ -193,7 +193,7 @@ describe("update", () => {
 		const student = await Student.update(testIds.students[0], updateData);
 		expect(student).toEqual({
 			id: testIds.students[0],
-			skillLevel: "Beginner",
+			skillLevelId: testIds.skillLevels[0],
 			...updateData,
 		});
 	});
@@ -409,7 +409,7 @@ describe("addTechnique", function () {
 			mode: "Ionian",
 			type: "Scale",
 			description: "This is a scale",
-			skillLevel: "Beginner",
+			skillLevelId: testIds.skillLevels[0],
 			teacherId: testIds.teachers[0],
 			completed: false,
 			lastReview: null,
@@ -513,7 +513,7 @@ describe("addRepertoire", function () {
 			genre: "Classical",
 			sheetMusicUrl: "https://example.com/sheetmusic1",
 			description: "This is a piece",
-			skillLevel: "Beginner",
+			skillLevelId: testIds.skillLevels[0],
 			teacherId: testIds.teachers[0],
 			completed: false,
 			lastReview: null,

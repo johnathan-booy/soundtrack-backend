@@ -7,15 +7,17 @@ class Repertoire {
 	/**
 	 * Retrieve all repertoire items in the database.
 	 *
-	 * @returns {Array} An array of repertoire items [{id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevelId, teacherId}]
+	 * @returns {Array} [{id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevelId, teacherId}]
 	 */
 	static async getAll() {
 		const results = await db.query(
 			`
-            SELECT r.id, r.name, r.composer, r.arranger, r.genre, r.sheet_music_url AS "sheetMusicUrl", r.description, r.date_added AS "dateAdded", sl.name AS "skillLevel", r.teacher_id AS "teacherId"
-            FROM repertoire r
-            JOIN skill_levels sl ON r.skill_level_id = sl.id
-            ORDER BY r.name
+            SELECT 	id, name, composer, arranger, genre, 
+					sheet_music_url AS "sheetMusicUrl", description, 
+					date_added AS "dateAdded", skill_level_id AS "skillLevelId", 
+					teacher_id AS "teacherId"
+            FROM 	repertoire
+            ORDER BY name
         `
 		);
 		return results.rows;
@@ -26,27 +28,17 @@ class Repertoire {
 	 *
 	 * @param {Number} id - ID of repertoire item to retrieve
 	 *
-	 * @returns {Object} Repertoire item object with the following properties:
-	 * - id
-	 * - name
-	 * - composer
-	 * - arranger
-	 * - genre
-	 * - sheetMusicUrl
-	 * - description
-	 * - dateAdded
-	 * - skillLevelId
-	 * - teacherId
+	 * @returns {Object} {id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, teacherId, skillLevelId}
 	 *
 	 * @throws {NotFoundError} If repertoire item is not found.
 	 */
 	static async get(id) {
 		const res = await db.query(
-			`SELECT r.id, r.name, r.composer, r.arranger, r.genre, r.sheet_music_url AS "sheetMusicUrl", r.description, r.date_added AS "dateAdded",
-                    r.teacher_id AS "teacherId", sl.name AS "skillLevel"
-            FROM repertoire AS r
-            JOIN skill_levels AS sl ON r.skill_level_id = sl.id
-            WHERE r.id = $1`,
+			`SELECT id, name, composer, arranger, genre, sheet_music_url AS "sheetMusicUrl", 
+					description, date_added AS "dateAdded",
+                    teacher_id AS "teacherId", skill_level_id AS "skillLevelId"
+            FROM 	repertoire AS r
+            WHERE 	id = $1`,
 			[id]
 		);
 
@@ -60,7 +52,7 @@ class Repertoire {
 	/**
 	 * Create a new repertoire item and add it to the database.
 	 *
-	 * @param {object} data - An object containing the new repertoire item's `name`, `composer`, `arranger`, `genre`, `sheetMusicUrl`, `description`, `skillLevelId`, and `teacherId`.
+	 * @param {object} data {id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, teacherId, skillLevelId}
 	 *
 	 * @returns {object} An object containing the `id`, `name`, `composer`, `arranger`, `genre`, `sheetMusicUrl`, `description`, `dateAdded`, `skillLevel`, and `teacherId` of the newly created repertoire item.
 	 *	 */
@@ -81,7 +73,7 @@ class Repertoire {
                 INSERT INTO repertoire (name, composer, arranger, genre, sheet_music_url, description, skill_level_id, teacher_id)
                 VALUES      ($1, $2, $3, $4, $5, $6, $7, $8)
                 RETURNING   id, name, composer, arranger, genre, sheet_music_url AS "sheetMusicUrl", description, date_added AS "dateAdded",
-                            (SELECT name FROM skill_levels WHERE id=$7) AS "skillLevel", teacher_id AS "teacherId"`,
+                            skill_level_id AS "skillLevelId", teacher_id AS "teacherId"`,
 				[
 					name,
 					composer,
@@ -107,7 +99,7 @@ class Repertoire {
 	 * @param {number} id - repertoire item identifier
 	 * @param {object} data - can include: {name, composer, arranger, genre, sheetMusicUrl, description, skillLevelId, teacherId}
 	 *
-	 * @returns {object} - { id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevel, teacherId }
+	 * @returns {object} - { id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevelId, teacherId }
 	 *
 	 * @throws {NotFoundError} if `id` is invalid
 	 */
@@ -143,28 +135,6 @@ class Repertoire {
 			if (!repertoire) {
 				throw new NotFoundError(`No repertoire item found with id: ${id}`);
 			}
-
-			// Step 2: Query the database again to get the updated repertoire item
-			// with the skillLevel field joined from the skill_levels table
-			querySql = `
-            SELECT
-              r.id,
-              r.name,
-              r.composer,
-              r.arranger,
-              r.genre,
-              r.sheet_music_url AS "sheetMusicUrl",
-              r.description,
-              r.date_added AS "dateAdded",
-              sl.name AS "skillLevel",
-              r.teacher_id AS "teacherId"
-            FROM
-              repertoire AS r
-              JOIN skill_levels AS sl ON sl.id = r.skill_level_id
-            WHERE r.id = $1
-          `;
-			result = await db.query(querySql, [id]);
-			repertoire = result.rows[0];
 
 			return repertoire;
 		} catch (err) {

@@ -35,19 +35,19 @@ describe("GET /students", () => {
 					id: testIds.students[0],
 					name: "Student1",
 					email: "student1@example.com",
-					skillLevel: "Beginner",
+					skillLevelId: testIds.skillLevels[0],
 				},
 				{
 					id: testIds.students[1],
 					name: "Student2",
 					email: "student2@example.com",
-					skillLevel: "Intermediate",
+					skillLevelId: testIds.skillLevels[1],
 				},
 				{
 					id: testIds.students[2],
 					name: "Student3",
 					email: "student3@example.com",
-					skillLevel: "Advanced",
+					skillLevelId: testIds.skillLevels[2],
 				},
 			],
 		});
@@ -67,7 +67,7 @@ describe("GET /students", () => {
 					id: testIds.students[2],
 					name: "Student3",
 					email: "student3@example.com",
-					skillLevel: "Advanced",
+					skillLevelId: testIds.skillLevels[2],
 				},
 			],
 		});
@@ -87,7 +87,7 @@ describe("GET /students", () => {
 					id: testIds.students[2],
 					name: "Student3",
 					email: "student3@example.com",
-					skillLevel: "Advanced",
+					skillLevelId: testIds.skillLevels[2],
 				},
 			],
 		});
@@ -106,7 +106,7 @@ describe("GET /students", () => {
 					id: testIds.students[1],
 					name: "Student2",
 					email: "student2@example.com",
-					skillLevel: "Intermediate",
+					skillLevelId: testIds.skillLevels[1],
 				},
 			],
 		});
@@ -125,7 +125,7 @@ describe("GET /students", () => {
 					id: testIds.students[1],
 					name: "Student2",
 					email: "student2@example.com",
-					skillLevel: "Intermediate",
+					skillLevelId: testIds.skillLevels[1],
 				},
 			],
 		});
@@ -162,7 +162,7 @@ describe("GET /students/:id", () => {
 				email: "student1@example.com",
 				name: "Student1",
 				description: "This is a description",
-				skillLevel: "Beginner",
+				skillLevelId: testIds.skillLevels[0],
 				teacherId: adminId,
 			},
 		});
@@ -180,7 +180,7 @@ describe("GET /students/:id", () => {
 				email: "student3@example.com",
 				name: "Student3",
 				description: "This is yet another description",
-				skillLevel: "Advanced",
+				skillLevelId: testIds.skillLevels[2],
 				teacherId: teacherId,
 			},
 		});
@@ -215,7 +215,7 @@ describe("PATCH /students/:id", () => {
 				name: "updatedUser",
 				description: "updated description",
 				teacherId: expect.any(String),
-				skillLevel: "Beginner",
+				skillLevelId: testIds.skillLevels[0],
 			},
 		});
 	});

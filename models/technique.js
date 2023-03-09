@@ -7,16 +7,17 @@ class Technique {
 	/**
 	 * Retrieve all techniques in the database.
 	 *
-	 * @returns {Array} An array of techniques [{id, tonic, mode, type, description, skillLevel, dateAdded, teacherId}]
+	 * @returns {Array} An array of techniques [{id, tonic, mode, type, description, skillLevelId, dateAdded, teacherId}]
 	 */
 	static async getAll() {
 		const results = await db.query(
 			`
-        SELECT t.id, t.tonic, t.mode, t.type, t.description, s.name AS "skillLevel", t.date_added AS "dateAdded", t.teacher_id AS "teacherId"
-        FROM techniques t
-        JOIN skill_levels s ON t.skill_level_id = s.id
-        ORDER BY t.date_added DESC
-      `
+				SELECT 	id, tonic, mode, type, description, 
+						skill_level_id AS "skillLevelId", date_added AS "dateAdded", 
+						teacher_id AS "teacherId"
+				FROM 	techniques
+				ORDER BY date_added DESC
+			`
 		);
 		return results.rows;
 	}
@@ -26,26 +27,17 @@ class Technique {
 	 *
 	 * @param {Number} id - ID of technique to retrieve
 	 *
-	 * @returns {Object} Technique object with the following properties:
-	 * - id
-	 * - tonic
-	 * - mode
-	 * - type
-	 * - description
-	 * - dateAdded
-	 * - skillLevelId
-	 * - teacherId
+	 * @returns {Object} {id, tonic, mode, type, description, dateAdded, teacherId, skillLevelId}
 	 *
 	 * @throws {NotFoundError} If technique is not found.
 	 */
 
 	static async get(id) {
 		const res = await db.query(
-			`SELECT t.id, t.tonic, t.mode, t.type, t.description, t.date_added AS "dateAdded",
-                    t.teacher_id AS "teacherId", sl.name AS "skillLevel"
-            FROM techniques AS t
-            JOIN skill_levels AS sl ON t.skill_level_id = sl.id
-            WHERE t.id = $1`,
+			`SELECT id, tonic, mode, type, description, date_added AS "dateAdded",
+                    teacher_id AS "teacherId", skill_level_id AS "skillLevelId"
+            FROM techniques
+            WHERE id = $1`,
 			[id]
 		);
 
@@ -61,7 +53,7 @@ class Technique {
 	 *
 	 * @param {object} data - An object containing the new technique's `tonic`, `mode`, `type`, `description`, `skillLevelId`, and `teacherId`.
 	 *
-	 * @returns {object} An object containing the `id`, `tonic`, `mode`, `type`, `description`, `dateAdded`, `skillLevel`, and `teacherId` of the newly created technique.
+	 * @returns {object}{id, tonic, mode, type, description, dateAdded, teacherId, skillLevelId}
 	 *
 	 * @throws {BadRequestError} if the provided technique already exists in the database.
 	 */
@@ -81,7 +73,7 @@ class Technique {
                 INSERT INTO techniques (tonic, mode, type, description, skill_level_id, teacher_id)
                 VALUES      ($1, $2, $3, $4, $5, $6)
                 RETURNING   id, tonic, mode, type, description, date_added AS "dateAdded",
-                            (SELECT name FROM skill_levels WHERE id=$5) AS "skillLevel", teacher_id AS "teacherId"`,
+                            skill_level_id AS "skillLevelId", teacher_id AS "teacherId"`,
 				[tonic, mode, type, description, skillLevelId, teacherId]
 			);
 			return res.rows[0];
@@ -107,6 +99,7 @@ class Technique {
 		try {
 			const { setCols, values } = sqlForPartialUpdate(data, {
 				skillLevelId: "skill_level_id",
+				teacherId: "teacher_id",
 			});
 			const idVarIdx = values.length + 1;
 
@@ -132,32 +125,11 @@ class Technique {
 				throw new NotFoundError(`No technique found with id: ${id}`);
 			}
 
-			// Step 2: Query the database again to get the updated technique item
-			// with the skillLevel field joined from the skill_levels table
-			querySql = `
-            SELECT
-              t.id,
-              t.tonic,
-              t.mode,
-              t.type,
-              t.description,
-              t.date_added AS "dateAdded",
-              sl.name AS "skillLevel",
-              t.teacher_id AS "teacherId"
-            FROM
-              techniques AS t
-              JOIN skill_levels AS sl ON sl.id = t.skill_level_id
-            WHERE t.id = $1
-          `;
-			result = await db.query(querySql, [id]);
-			technique = result.rows[0];
-
 			return technique;
 		} catch (err) {
 			handlePostgresError(err);
 		}
 	}
-	q;
 
 	/**
 	 * Delete the technique with the given id.

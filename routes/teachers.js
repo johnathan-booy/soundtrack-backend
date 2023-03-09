@@ -179,7 +179,7 @@ router.get(
 		 * Returns:
 		 * {
 		 * techniques:
-		 * [{id, tonic, mode, type, description, dateAdded, skillLevel}],
+		 * [{id, tonic, mode, type, description, dateAdded, skillLevelId}],
 		 * }
 		 *
 		 * Authorization is required: admin or same teacher as ":id"
@@ -204,7 +204,7 @@ router.get(
 		 * Returns:
 		 * {
 		 * repertoire:
-		 * [{id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevel}],
+		 * [{id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevelId}],
 		 * }
 		 *
 		 * Authorization is required: admin or same teacher as ":id"

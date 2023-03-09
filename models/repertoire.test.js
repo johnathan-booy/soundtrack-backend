@@ -29,7 +29,7 @@ describe("getAll", function () {
 				genre: "Classical",
 				sheetMusicUrl: "https://example.com/sheetmusic1",
 				description: "This is a piece",
-				skillLevel: "Beginner",
+				skillLevelId: testIds.skillLevels[0],
 				dateAdded: expect.any(Date),
 				teacherId: testIds.teachers[0],
 			},
@@ -41,7 +41,7 @@ describe("getAll", function () {
 				genre: "Pop",
 				sheetMusicUrl: "https://example.com/sheetmusic2",
 				description: "This is another piece",
-				skillLevel: "Intermediate",
+				skillLevelId: testIds.skillLevels[1],
 				dateAdded: expect.any(Date),
 				teacherId: testIds.teachers[1],
 			},
@@ -60,7 +60,7 @@ describe("get", function () {
 			genre: "Classical",
 			sheetMusicUrl: "https://example.com/sheetmusic1",
 			description: "This is a piece",
-			skillLevel: "Beginner",
+			skillLevelId: testIds.skillLevels[0],
 			dateAdded: expect.any(Date),
 			teacherId: testIds.teachers[0],
 		});
@@ -101,7 +101,7 @@ describe("create", function () {
 			sheetMusicUrl: "https://example.com/new-piece",
 			description: "This is a new piece",
 			dateAdded: expect.any(Date),
-			skillLevel: "Advanced",
+			skillLevelId: testIds.skillLevels[2],
 			teacherId: adminId,
 		});
 
@@ -200,7 +200,7 @@ describe("update", function () {
 			sheetMusicUrl: "https://example.com/updated_sheetmusic1",
 			description: "This is an updated piece",
 			dateAdded: expect.any(Date),
-			skillLevel: "Intermediate",
+			skillLevelId: testIds.skillLevels[1],
 			teacherId: teacherId,
 		});
 

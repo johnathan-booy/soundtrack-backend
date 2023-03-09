@@ -26,7 +26,7 @@ describe("getAll", function () {
 				mode: "Ionian",
 				type: "Scale",
 				description: "This is a scale",
-				skillLevel: "Beginner",
+				skillLevelId: testIds.skillLevels[0],
 				dateAdded: expect.any(Date),
 				teacherId: testIds.teachers[0],
 			},
@@ -36,7 +36,7 @@ describe("getAll", function () {
 				mode: "Dorian",
 				type: "Scale",
 				description: "This is another scale",
-				skillLevel: "Intermediate",
+				skillLevelId: testIds.skillLevels[1],
 				dateAdded: expect.any(Date),
 				teacherId: testIds.teachers[1],
 			},
@@ -54,7 +54,7 @@ describe("get", function () {
 			type: "Scale",
 			description: "This is a scale",
 			dateAdded: expect.any(Date),
-			skillLevel: "Beginner",
+			skillLevelId: testIds.skillLevels[0],
 			teacherId: testIds.teachers[0],
 		});
 	});
@@ -90,7 +90,7 @@ describe("create", function () {
 			type: "Scale",
 			description: "This is a new scale",
 			dateAdded: expect.any(Date),
-			skillLevel: "Intermediate",
+			skillLevelId: testIds.skillLevels[1],
 			teacherId: adminId,
 		});
 
@@ -132,6 +132,64 @@ describe("create", function () {
 			await Technique.create({
 				...newTechnique,
 				teacherId: undefined,
+			});
+			fail();
+		} catch (err) {
+			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+});
+
+describe("update", () => {
+	const updateData = {
+		tonic: "E",
+		mode: "Phrygian",
+		type: "Scale",
+		description: "This is a new scale",
+	};
+
+	it("works", async () => {
+		const technique = await Technique.update(testIds.techniques[0], {
+			...updateData,
+			skillLevelId: testIds.skillLevels[1],
+		});
+		expect(technique).toEqual({
+			id: expect.any(Number),
+			tonic: "E",
+			mode: "Phrygian",
+			type: "Scale",
+			description: "This is a new scale",
+			dateAdded: expect.any(Date),
+			skillLevelId: testIds.skillLevels[1],
+			teacherId: adminId,
+		});
+	});
+
+	it("throws NotFoundError if technique id not found", async () => {
+		try {
+			await Technique.update(-1, updateData); // Nonexistent technique id
+			fail();
+		} catch (err) {
+			expect(err instanceof NotFoundError).toBeTruthy();
+		}
+	});
+
+	it("throws BadRequestError if teacher id is invalid", async () => {
+		try {
+			const resp = await Technique.update(testIds.techniques[0], {
+				teacherId: -1, // Invalid teacher id
+			});
+			console.log(resp);
+			fail();
+		} catch (err) {
+			expect(err instanceof BadRequestError).toBeTruthy();
+		}
+	});
+
+	it("throws BadRequestError if skill level id is invalid", async () => {
+		try {
+			await Technique.update(testIds.techniques[0], {
+				skillLevelId: -1, // Invalid skill level id
 			});
 			fail();
 		} catch (err) {

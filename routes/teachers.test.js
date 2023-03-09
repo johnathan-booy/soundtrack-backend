@@ -381,7 +381,7 @@ describe("GET /teachers/:id/techniques", () => {
 					type: "Scale",
 					description: "This is another scale",
 					dateAdded: expect.any(String),
-					skillLevel: "Intermediate",
+					skillLevelId: testIds.skillLevels[1],
 				},
 			],
 		});
@@ -402,7 +402,7 @@ describe("GET /teachers/:id/techniques", () => {
 					type: "Scale",
 					description: "This is another scale",
 					dateAdded: expect.any(String),
-					skillLevel: "Intermediate",
+					skillLevelId: testIds.skillLevels[1],
 				},
 			],
 		});
@@ -435,7 +435,7 @@ describe("GET /teachers/:id/repertoire", () => {
 					sheetMusicUrl: "https://example.com/sheetmusic2",
 					description: "This is another piece",
 					dateAdded: expect.any(String),
-					skillLevel: "Intermediate",
+					skillLevelId: testIds.skillLevels[1],
 				},
 			],
 		});
@@ -458,7 +458,7 @@ describe("GET /teachers/:id/repertoire", () => {
 					sheetMusicUrl: "https://example.com/sheetmusic2",
 					description: "This is another piece",
 					dateAdded: expect.any(String),
-					skillLevel: "Intermediate",
+					skillLevelId: testIds.skillLevels[1],
 				},
 			],
 		});

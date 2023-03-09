@@ -266,7 +266,7 @@ describe("getTechniques", () => {
 				type: "Scale",
 				description: "This is a scale",
 				dateAdded: expect.any(Date),
-				skillLevel: "Beginner",
+				skillLevelId: testIds.skillLevels[0],
 			},
 		]);
 	});
@@ -294,7 +294,7 @@ describe("getRepertoire", () => {
 				sheetMusicUrl: "https://example.com/sheetmusic1",
 				description: "This is a piece",
 				dateAdded: expect.any(Date),
-				skillLevel: "Beginner",
+				skillLevelId: testIds.skillLevels[0],
 			},
 		]);
 	});

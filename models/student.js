@@ -16,7 +16,7 @@ class Student {
 	 *
 	 * @param {object} data - with `name`, `email`, and `teacherId` fields. Optional fields are `description` and `skillLevelId`.
 	 *
-	 * @returns {object}containing the registered student's `id`, `name`, `email`, `description`, `skillLevelId`, and `teacherId`.
+	 * @returns {object} {id, name, email, description, skillLevelId, teacherId}
 	 *
 	 * @throws {BadRequestError} If the `teacherId` or `skillLevelId` does not exist in the database, or the email already exists
 	 */
@@ -53,14 +53,8 @@ class Student {
 	 */
 	static async getAll(searchFilters = {}) {
 		let query = `
-					SELECT
-						s.id, s.name, s.email, lvl.name AS "skillLevel"
-					FROM
-						students s
-					JOIN
-						skill_levels lvl
-					ON
-						lvl.id = s.skill_level_id
+					SELECT	id, name, email, skill_level_id AS "skillLevelId"
+					FROM	students
 					`;
 		let whereExpressions = [];
 		let queryValues = [];
@@ -73,15 +67,15 @@ class Student {
 			await Teacher.get(teacherId);
 
 			queryValues.push(teacherId);
-			whereExpressions.push(`s.teacher_id = $${queryValues.length}`);
+			whereExpressions.push(`teacher_id = $${queryValues.length}`);
 		}
 		if (name) {
 			queryValues.push(`%${name}%`);
-			whereExpressions.push(`s.name ILIKE $${queryValues.length}`);
+			whereExpressions.push(`name ILIKE $${queryValues.length}`);
 		}
 		if (skillLevelId !== undefined) {
 			queryValues.push(skillLevelId);
-			whereExpressions.push(`s.skill_level_id = $${queryValues.length}`);
+			whereExpressions.push(`skill_level_id = $${queryValues.length}`);
 		}
 
 		// Assemble the query
@@ -105,16 +99,9 @@ class Student {
 	static async get(id) {
 		const result = await db.query(
 			`
-			SELECT
-				s.id, s.name, s.email, s.description, lvl.name AS "skillLevel", s.teacher_id AS "teacherId"
-			FROM
-				students s
-			JOIN
-				skill_levels lvl
-			ON
-				lvl.id = s.skill_level_id
-			WHERE
-				s.id = $1`,
+			SELECT	id, name, email, description, skill_level_id AS "skillLevelId", teacher_id AS "teacherId"
+			FROM	students
+			WHERE	id = $1`,
 			[id]
 		);
 
@@ -134,7 +121,7 @@ class Student {
 	 * @param {Number} id - student identifier
 	 * @param {object} data - can include: { name, email, teacherId, description, skillLevelId }
 	 *
-	 * @returns {object} - { id, email, name, teacherId, description, skillLevel }
+	 * @returns {object} - { id, email, name, teacherId, description, skillLevelId }
 	 *
 	 * @throws {NotFoundError} if `id` is invalid
 	 * @throws {BadRequestError} If the `teacherId` or `skillLevelId` does not exist in the database, or the email already exists
@@ -160,7 +147,7 @@ class Student {
 					email,
 					teacher_id AS "teacherId",
 					description,
-					(SELECT name FROM skill_levels WHERE id = students.skill_level_id) AS "skillLevel"`;
+					skill_level_id AS "skillLevelId"`;
 
 			const result = await db.query(querySql, [...values, id]);
 			const student = result.rows[0];
@@ -366,7 +353,7 @@ class Student {
 			const technique = await Technique.get(techniqueId);
 			const { id, dateAdded, completed, lastReview, nextReview } =
 				result.rows[0];
-			const { tonic, mode, type, description, teacherId, skillLevel } =
+			const { tonic, mode, type, description, teacherId, skillLevelId } =
 				technique;
 
 			return {
@@ -376,7 +363,7 @@ class Student {
 				mode,
 				type,
 				description,
-				skillLevel,
+				skillLevelId,
 				teacherId,
 				completed,
 				lastReview,
@@ -431,7 +418,7 @@ class Student {
 				sheetMusicUrl,
 				description,
 				teacherId,
-				skillLevel,
+				skillLevelId,
 			} = repertoire;
 
 			return {
@@ -443,7 +430,7 @@ class Student {
 				genre,
 				sheetMusicUrl,
 				description,
-				skillLevel,
+				skillLevelId,
 				teacherId,
 				completed,
 				lastReview,

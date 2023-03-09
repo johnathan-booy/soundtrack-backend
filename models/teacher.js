@@ -72,9 +72,9 @@ class Teacher {
 
 			const results = await db.query(
 				`INSERT INTO teachers
-            (email, password, name, description, is_admin)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING id, email, name, description, is_admin AS "isAdmin"`,
+            				(email, password, name, description, is_admin)
+            	VALUES 		($1, $2, $3, $4, $5)
+            	RETURNING 	id, email, name, description, is_admin AS "isAdmin"`,
 				[email, hashedPassword, name, description, isAdmin]
 			);
 
@@ -92,12 +92,9 @@ class Teacher {
 	 */
 	static async getAll() {
 		const results = await db.query(`
-			SELECT
-				id, name, email, description, is_admin AS "isAdmin"
-			FROM
-				teachers
-			ORDER BY
-				date_added
+			SELECT	id, name, email, description, is_admin AS "isAdmin"
+			FROM	teachers
+			ORDER BY date_added
 		`);
 
 		return results.rows;
@@ -110,13 +107,9 @@ class Teacher {
 	static async get(id) {
 		const results = await db.query(
 			`
-			SELECT
-				id, name, email, description, is_admin AS "isAdmin"
-			FROM
-				teachers
-			WHERE
-				id = $1
-		`,
+			SELECT	id, name, email, description, is_admin AS "isAdmin"
+			FROM	teachers
+			WHERE	id = $1`,
 			[id]
 		);
 
@@ -249,7 +242,7 @@ class Teacher {
 	 *
 	 * @param {string} id - teacher identifier
 	 *
-	 * @returns {Array} [{id, tonic, mode, type, description, dateAdded, skillLevel}]
+	 * @returns {Array} [{id, tonic, mode, type, description, dateAdded, skillLevelId}]
 	 *
 	 */
 	static async getTechniques(id) {
@@ -259,15 +252,11 @@ class Teacher {
 		const results = await db.query(
 			`
 			SELECT
-				t.id, t.tonic, t.mode, t.type, t.description, t.date_added AS "dateAdded", lvl.name AS "skillLevel"
+				id, tonic, mode, type, description, date_added AS "dateAdded", skill_level_id AS "skillLevelId"
 			FROM
-				techniques t
-			JOIN
-				skill_levels lvl
-			ON
-				lvl.id = t.skill_level_id
+				techniques
 			WHERE
-				t.teacher_id = $1
+				teacher_id = $1
 			`,
 			[id]
 		);
@@ -279,7 +268,7 @@ class Teacher {
 	 *
 	 * @param {string} id - teacher identifier
 	 *
-	 * @returns {Array} [{id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevel}]
+	 * @returns {Array} [{id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevelId}]
 	 *
 	 */
 	static async getRepertoire(id) {
@@ -289,17 +278,13 @@ class Teacher {
 		const results = await db.query(
 			`
 			SELECT
-				r.id, r.name, r.composer, r.arranger, r.genre, 
-				r.sheet_music_url AS "sheetMusicUrl", r.description, 
-				r.date_added AS "dateAdded", lvl.name AS "skillLevel"
+				id, name, composer, arranger, genre, 
+				sheet_music_url AS "sheetMusicUrl", description, 
+				date_added AS "dateAdded", skill_level_id AS "skillLevelId"
 			FROM
-				repertoire r
-			JOIN
-				skill_levels lvl
-			ON
-				lvl.id = r.skill_level_id
+				repertoire
 			WHERE
-				r.teacher_id = $1
+				teacher_id = $1
 			`,
 			[id]
 		);

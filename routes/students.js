@@ -20,7 +20,7 @@ router.get("/", correctTeacherOrAdmin, async function (req, res, next) {
 	 * Optional filtering - name, skillLevelId
 	 *
 	 * Returns:
-	 * {students: [{id, name, email, skillLevel}]}
+	 * {students: [{id, name, email, skillLevelId}]}
 	 *
 	 * Authorization is required: admin or same teacher as teacherId
 	 */
@@ -53,7 +53,7 @@ router.get("/:id", loggedIn, async function (req, res, next) {
 	 * Endpoint to get information about a student by their ID.
 	 *
 	 * Returns:
-	 * { id, name, email, description, skillLevel, teacherId }
+	 * { id, name, email, description, skillLevelId, teacherId }
 	 *
 	 * Authorization is required: admin or same teacher as teacherId
 	 */
@@ -82,7 +82,7 @@ router.patch("/:id", loggedIn, async function (req, res, next) {
 	 * Data can include: { name, email, description, skillLevelId }
 	 *
 	 * Returns:
-	 * { id, name, email, description, skillLevel, teacherId }
+	 * { id, name, email, description, skillLevelId, teacherId }
 	 *
 	 * Authorization is required: admin or same teacher as teacherId
 	 */
