@@ -126,4 +126,27 @@ router.patch("/:id", loggedIn, async function (req, res, next) {
 	}
 });
 
+router.delete("/:id", loggedIn, async function (req, res, next) {
+	/** DELETE /students/:id
+	 *
+	 * Endpoint to delete a student by their ID.
+	 *
+	 * Returns:
+	 * { deleted: id }
+	 *
+	 * Authorization is required: admin or same teacher as teacherId
+	 */
+	try {
+		const student = await Student.get(req.params.id);
+		const teacher = res.locals.teacher;
+		if (!teacher.isAdmin && teacher.id !== student.teacherId) {
+			throw new UnauthorizedError();
+		}
+		await Student.delete(req.params.id);
+		return res.json({ deleted: +req.params.id });
+	} catch (err) {
+		return next(err);
+	}
+});
+
 module.exports = router;

@@ -361,3 +361,35 @@ describe("PATCH /students/:id", () => {
 		expect(resp.statusCode).toEqual(401);
 	});
 });
+
+describe("DELETE /students/:id", () => {
+	it("works for admin", async () => {
+		const resp = await request(app)
+			.delete(`/students/${testIds.students[2]}`)
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			deleted: testIds.students[2],
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		const resp = await request(app)
+			.delete(`/students/${testIds.students[2]}`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			deleted: testIds.students[2],
+		});
+	});
+
+	it("returns unauthorized for different teacher than id", async () => {
+		const resp = await request(app)
+			.delete(`/students/${testIds.students[0]}`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
