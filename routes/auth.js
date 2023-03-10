@@ -54,16 +54,14 @@ router.post("/register", async function (req, res, next) {
 	 */
 
 	try {
-		const validatedBody = await teacherRegisterSchema.validate(req.body, {
-			abortEarly: false,
-		});
+		const validatedBody = await teacherRegisterSchema.validate(req.body);
 		const teacher = await Teacher.register(validatedBody);
 		const { id: teacherId } = teacher;
 		const token = createToken(teacher);
 		return res.status(201).json({ token, teacherId });
 	} catch (err) {
 		if (err.name === "ValidationError") {
-			return next(new BadRequestError(err.errors));
+			return next(new BadRequestError(err.errors[0]));
 		}
 		return next(err);
 	}

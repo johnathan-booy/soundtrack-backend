@@ -34,15 +34,13 @@ router.get("/", correctTeacherOrAdmin, async function (req, res, next) {
 	if (q.skillLevelId !== undefined) q.skillLevelId = +q.skillLevelId;
 
 	try {
-		const validatedQuery = await studentSearchSchema.validate(q, {
-			abortEarly: false,
-		});
+		const validatedQuery = await studentSearchSchema.validate(q);
 
 		const students = await Student.getAll(validatedQuery);
 		return res.json({ students });
 	} catch (err) {
 		if (err.name === "ValidationError") {
-			return next(new BadRequestError(err.errors));
+			return next(new BadRequestError(err.errors[0]));
 		}
 		return next(err);
 	}
@@ -85,14 +83,12 @@ router.post("/", correctTeacherOrAdmin, async function (req, res, next) {
 	 * Authorization is required: admin or same teacher as teacherId
 	 */
 	try {
-		const validatedBody = await studentNewSchema.validate(req.body, {
-			abortEarly: false,
-		});
+		const validatedBody = await studentNewSchema.validate(req.body);
 		const student = await Student.create(validatedBody);
 		return res.status(201).json({ student });
 	} catch (err) {
 		if (err.name === "ValidationError") {
-			return next(new BadRequestError(err.errors));
+			return next(new BadRequestError(err.errors[0]));
 		}
 		return next(err);
 	}

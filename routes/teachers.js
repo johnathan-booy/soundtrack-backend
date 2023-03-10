@@ -29,15 +29,13 @@ router.post("/", admin, async function (req, res, next) {
 	 * Authorization is required: admin
 	 */
 	try {
-		const validatedBody = await teacherNewSchema.validate(req.body, {
-			abortEarly: false,
-		});
+		const validatedBody = await teacherNewSchema.validate(req.body);
 		const teacher = await Teacher.register(validatedBody);
 		const token = createToken(teacher);
 		return res.status(201).json({ teacher, token });
 	} catch (err) {
 		if (err.name === "ValidationError") {
-			return next(new BadRequestError(err.errors));
+			return next(new BadRequestError(err.errors[0]));
 		}
 		return next(err);
 	}
@@ -97,14 +95,12 @@ router.patch("/:id", correctTeacherOrAdmin, async function (req, res, next) {
 	 * Authorization is required: admin or same teacher as ":id"
 	 */
 	try {
-		const validatedBody = await teacherUpdateSchema.validate(req.body, {
-			abortEarly: false,
-		});
+		const validatedBody = await teacherUpdateSchema.validate(req.body);
 		const teacher = await Teacher.update(req.params.id, validatedBody);
 		return res.json({ teacher });
 	} catch (err) {
 		if (err.name === "ValidationError") {
-			return next(new BadRequestError(err.errors));
+			return next(new BadRequestError(err.errors[0]));
 		}
 		return next(err);
 	}
@@ -153,14 +149,12 @@ router.get(
 		}
 
 		try {
-			const validatedQuery = await lessonSearchSchema.validate(q, {
-				abortEarly: false,
-			});
+			const validatedQuery = await lessonSearchSchema.validate(q);
 			const lessons = await Teacher.getLessons(req.params.id, validatedQuery);
 			return res.json({ lessons });
 		} catch (err) {
 			if (err.name === "ValidationError") {
-				return next(new BadRequestError(err.errors));
+				return next(new BadRequestError(err.errors[0]));
 			}
 			return next(err);
 		}
