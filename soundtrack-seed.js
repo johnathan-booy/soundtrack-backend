@@ -22,9 +22,15 @@ async function createAll() {
 
 async function createSkillLevels() {
 	const skillLevels = await Promise.all([
-		SkillLevel.create("Beginner"),
-		SkillLevel.create("Intermediate"),
-		SkillLevel.create("Advanced"),
+		SkillLevel.create("Beginner 1"),
+		SkillLevel.create("Beginner 2"),
+		SkillLevel.create("Beginner 3"),
+		SkillLevel.create("Intermediate 1"),
+		SkillLevel.create("Intermediate 2"),
+		SkillLevel.create("Intermediate 3"),
+		SkillLevel.create("Advanced 1"),
+		SkillLevel.create("Advanced 2"),
+		SkillLevel.create("Advanced 3"),
 	]);
 
 	return skillLevels;

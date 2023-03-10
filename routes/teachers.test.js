@@ -1,10 +1,8 @@
 "use strict";
 
-const { JsonWebTokenError } = require("jsonwebtoken");
 const request = require("supertest");
 
 const app = require("../app");
-const { SECRET_KEY } = require("../config");
 
 const {
 	adminToken,

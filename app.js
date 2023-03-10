@@ -8,6 +8,7 @@ const { authJWT } = require("./middleware/auth");
 const authRoutes = require("./routes/auth");
 const teacherRoutes = require("./routes/teachers");
 const studentRoutes = require("./routes/students");
+const skillLevelRoutes = require("./routes/skillLevels");
 const { NotFoundError } = require("./expressError");
 
 const app = express(); // Create new instance of express app
@@ -28,6 +29,7 @@ app.use(authJWT);
 app.use("/auth", authRoutes);
 app.use("/teachers", teacherRoutes);
 app.use("/students", studentRoutes);
+app.use("/skill-levels", skillLevelRoutes);
 
 /** Handle 404 errors -- this matches everything */
 app.use(function (req, res, next) {

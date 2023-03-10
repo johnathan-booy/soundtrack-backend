@@ -8,7 +8,6 @@ const teacherNewSchema = require("../schemas/teacherNewSchema");
 const createToken = require("../helpers/createToken");
 const { admin, correctTeacherOrAdmin } = require("../middleware/auth");
 const teacherUpdateSchema = require("../schemas/teacherUpdateSchema");
-const studentSearchSchema = require("../schemas/studentSearchSchema");
 const lessonSearchSchema = require("../schemas/lessonSearchSchema");
 
 /** Initialize express router */

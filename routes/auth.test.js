@@ -5,7 +5,6 @@ const request = require("supertest");
 const app = require("../app");
 
 const {
-	testData,
 	commonBeforeAll,
 	commonBeforeEach,
 	commonAfterEach,
