@@ -73,7 +73,7 @@ async function createStudents(skillLevels, teachers) {
 			teacherId: teachers[0].id,
 			description:
 				"A 14-year-old beginner piano player who wants to learn classical music.",
-			skillLevelId: skillLevels[0].id,
+			skillLevelId: skillLevels[1].id,
 		}),
 		Student.create({
 			name: "Bob Lee",
@@ -81,7 +81,7 @@ async function createStudents(skillLevels, teachers) {
 			teacherId: teachers[2].id,
 			description:
 				"A 27-year-old intermediate guitar player who wants to improve his fingerpicking technique.",
-			skillLevelId: skillLevels[1].id,
+			skillLevelId: skillLevels[3].id,
 		}),
 		Student.create({
 			name: "Catherine Kim",
@@ -89,7 +89,7 @@ async function createStudents(skillLevels, teachers) {
 			teacherId: teachers[1].id,
 			description:
 				"A 20-year-old advanced violinist who wants to prepare for a music competition.",
-			skillLevelId: skillLevels[2].id,
+			skillLevelId: skillLevels[7].id,
 		}),
 		Student.create({
 			name: "Daniel Park",
@@ -105,7 +105,7 @@ async function createStudents(skillLevels, teachers) {
 			teacherId: teachers[0].id,
 			description:
 				"A 15-year-old intermediate piano player who wants to learn jazz improvisation.",
-			skillLevelId: skillLevels[1].id,
+			skillLevelId: skillLevels[4].id,
 		}),
 		Student.create({
 			name: "Frank Brown",
@@ -113,7 +113,7 @@ async function createStudents(skillLevels, teachers) {
 			teacherId: teachers[2].id,
 			description:
 				"A 25-year-old advanced guitar player who wants to learn how to write his own music.",
-			skillLevelId: skillLevels[2].id,
+			skillLevelId: skillLevels[8].id,
 		}),
 		Student.create({
 			name: "Grace Davis",
@@ -121,7 +121,7 @@ async function createStudents(skillLevels, teachers) {
 			teacherId: teachers[0].id,
 			description:
 				"A 12-year-old beginner piano player who is interested in playing pop music.",
-			skillLevelId: skillLevels[0].id,
+			skillLevelId: skillLevels[2].id,
 		}),
 		Student.create({
 			name: "Henry Kim",
@@ -129,7 +129,7 @@ async function createStudents(skillLevels, teachers) {
 			teacherId: teachers[1].id,
 			description:
 				"A 30-year-old intermediate violin player who wants to improve his bowing technique.",
-			skillLevelId: skillLevels[1].id,
+			skillLevelId: skillLevels[5].id,
 		}),
 		Student.create({
 			name: "Isabella Hernandez",
@@ -137,7 +137,7 @@ async function createStudents(skillLevels, teachers) {
 			teacherId: teachers[0].id,
 			description:
 				"A 17-year-old advanced piano player who wants to prepare for a music college audition.",
-			skillLevelId: skillLevels[2].id,
+			skillLevelId: skillLevels[6].id,
 		}),
 		Student.create({
 			name: "Jack Smith",
