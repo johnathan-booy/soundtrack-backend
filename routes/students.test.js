@@ -195,6 +195,98 @@ describe("GET /students/:id", () => {
 	});
 });
 
+describe("POST /students", () => {
+	it("works for admin", async () => {
+		const data = {
+			email: "new@test.com",
+			name: "newUser",
+			description: "new description",
+			skillLevelId: testIds.skillLevels[0],
+			teacherId: teacherId,
+		};
+		const resp = await request(app)
+			.post(`/students`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.send(data);
+		expect(resp.statusCode).toEqual(201);
+		expect(resp.body).toEqual({
+			student: {
+				id: expect.any(Number),
+				email: "new@test.com",
+				name: "newUser",
+				description: "new description",
+				teacherId: teacherId,
+				skillLevelId: testIds.skillLevels[0],
+			},
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		const data = {
+			email: "new@test.com",
+			name: "newUser",
+			description: "new description",
+			skillLevelId: testIds.skillLevels[0],
+			teacherId: teacherId,
+		};
+		const resp = await request(app)
+			.post(`/students`)
+			.set("Authorization", `Bearer ${teacherToken}`)
+			.send(data);
+		expect(resp.statusCode).toEqual(201);
+		expect(resp.body).toEqual({
+			student: {
+				id: expect.any(Number),
+				email: "new@test.com",
+				name: "newUser",
+				description: "new description",
+				teacherId: teacherId,
+				skillLevelId: testIds.skillLevels[0],
+			},
+		});
+	});
+
+	it("returns bad request with invalid data", async () => {
+		const data = {
+			email: "NOT_AN_EMAIL",
+			name: "newUser",
+		};
+		const resp = await request(app)
+			.post(`/students`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.send(data);
+
+		expect(resp.statusCode).toEqual(400);
+	});
+
+	it("returns bad request with duplicate email address", async () => {
+		const data = {
+			email: "student1@example.com",
+			name: "newUser",
+		};
+		const resp = await request(app)
+			.post(`/students`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.send(data);
+
+		expect(resp.statusCode).toEqual(400);
+	});
+
+	it("returns unauthorized for different teacher than id", async () => {
+		const data = {
+			email: "student1@example.com",
+			name: "newUser",
+			teacherId: adminId,
+		};
+		const resp = await request(app)
+			.post(`/students`)
+			.set("Authorization", `Bearer ${teacherToken}`)
+			.send(data);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
+
 describe("PATCH /students/:id", () => {
 	it("works for admin", async () => {
 		const data = {

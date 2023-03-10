@@ -62,7 +62,8 @@ function correctTeacherOrAdmin(req, res, next) {
 				teacher &&
 				(teacher.isAdmin ||
 					teacher.id === req.params.id ||
-					teacher.id === req.query.teacherId)
+					(req.method === "GET" && teacher.id === req.query.teacherId) ||
+					teacher.id === req.body.teacherId)
 			)
 		) {
 			throw new UnauthorizedError();

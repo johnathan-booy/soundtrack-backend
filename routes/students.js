@@ -4,6 +4,7 @@ const express = require("express");
 const { BadRequestError, UnauthorizedError } = require("../expressError");
 const { correctTeacherOrAdmin, loggedIn } = require("../middleware/auth");
 const Student = require("../models/student");
+const studentNewSchema = require("../schemas/studentNewSchema");
 const studentSearchSchema = require("../schemas/studentSearchSchema");
 const studentUpdateSchema = require("../schemas/studentUpdateSchema");
 
@@ -67,6 +68,32 @@ router.get("/:id", loggedIn, async function (req, res, next) {
 
 		return res.json({ student });
 	} catch (err) {
+		return next(err);
+	}
+});
+
+router.post("/", correctTeacherOrAdmin, async function (req, res, next) {
+	/** POST /students
+	 *
+	 * Endpoint to add a new student
+	 *
+	 * must enter { name, email } and may optionally include { description, skillLevelId, teacherId }.
+	 *
+	 * Returns:
+	 * { student : { id, name, email, description, skillLevelId, teacherId }}
+	 *
+	 * Authorization is required: admin or same teacher as teacherId
+	 */
+	try {
+		const validatedBody = await studentNewSchema.validate(req.body, {
+			abortEarly: false,
+		});
+		const student = await Student.create(validatedBody);
+		return res.status(201).json({ student });
+	} catch (err) {
+		if (err.name === "ValidationError") {
+			return next(new BadRequestError(err.errors));
+		}
 		return next(err);
 	}
 });
