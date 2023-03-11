@@ -2,6 +2,7 @@ const SkillLevel = require("./models/skillLevel");
 const Teacher = require("./models/teacher");
 const Student = require("./models/student");
 const db = require("./db");
+const Lesson = require("./models/lesson");
 require("colors");
 
 async function createAll() {
@@ -11,6 +12,7 @@ async function createAll() {
 		const skillLevels = await createSkillLevels();
 		const teachers = await createTeachers();
 		const students = await createStudents(skillLevels, teachers);
+		const lessons = await createLessons(students, teachers);
 		console.log("Database seeded.".green);
 	} catch (error) {
 		console.error("Error seeding the database:".red, error);
@@ -148,6 +150,35 @@ async function createStudents(skillLevels, teachers) {
 			skillLevelId: skillLevels[0].id,
 		}),
 	]);
+
+	return students;
+}
+
+async function createLessons(students, teachers) {
+	const lessons = [];
+
+	for (let i = 0; i < 150; i++) {
+		const studentIndex = Math.floor(Math.random() * students.length);
+		const teacherIndex = Math.floor(Math.random() * teachers.length);
+		const student = students[studentIndex];
+		const teacher = teachers[teacherIndex];
+
+		const randomDaysAgo = Math.floor(Math.random() * 90) + 1; // between 1 and 90 days ago
+		const date = new Date(Date.now() - randomDaysAgo * 24 * 60 * 60 * 1000);
+
+		const notes = `Lesson ${i + 1} notes.`;
+
+		const lesson = await Lesson.create({
+			teacherId: teacher.id,
+			studentId: student.id,
+			notes: notes,
+			date: date,
+		});
+
+		lessons.push(lesson);
+	}
+
+	return lessons;
 }
 
 createAll();

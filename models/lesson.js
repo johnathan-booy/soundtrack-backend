@@ -1,10 +1,8 @@
 "use strict";
 
 const db = require("../db");
-const { BadRequestError, NotFoundError } = require("../expressError");
+const { NotFoundError } = require("../expressError");
 const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
-const Technique = require("./technique");
-const Repertoire = require("./repertoire");
 const handlePostgresError = require("../helpers/handlePostgresError");
 
 /** Functions for lessons */
@@ -38,24 +36,24 @@ class Lesson {
 	/**
 	 * Create a new lesson.
 	 *
-	 * @param {object} data - required `{teacherId, studentId}` - optional `{notes}`
+	 * @param {object} data - required `{teacherId, studentId}` - optional `{notes, date}`
 	 *
 	 * @returns {object} `{id, date, notes, studentId, teacherId}
 	 *
 	 * @throws {BadRequestError} If the `teacherId` or `skillLevelId` does not exist in the database, or the email already exists
 	 */
-	static async create({ teacherId, studentId, notes }) {
+	static async create({ teacherId, studentId, notes, date = "NOW()" }) {
 		try {
 			const results = await db.query(
 				`
 				INSERT INTO	lessons
-							(notes, student_id, teacher_id)
-				VALUES 		($1, $2, $3)
+							(notes, student_id, teacher_id, date)
+				VALUES 		($1, $2, $3, $4)
 				RETURNING 	id, date, notes, student_id AS "studentId",
 							teacher_id AS "teacherId"
 				`,
 
-				[notes, studentId, teacherId]
+				[notes, studentId, teacherId, date]
 			);
 
 			return results.rows[0];
@@ -383,15 +381,6 @@ class Lesson {
 	// 		);
 	// 	}
 	// }
-}
-
-if (process.env.NODE_ENV !== "test") {
-	const test = async () => {
-		const res = await Lesson.delete(5);
-		console.log(res);
-	};
-
-	test();
 }
 
 module.exports = Lesson;

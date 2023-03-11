@@ -64,7 +64,7 @@
 -- (4, 3, '2022-02-20', NULL, NULL),
 -- (5, 5, '2022-01-25', NULL, NULL);
 
--- -- LESSONS
+-- LESSONS
 -- INSERT INTO lessons (student_id, teacher_id, date, notes) VALUES
 -- (1, 1, NOW() - INTERVAL '1 Days', 'Reviewed scales and practiced Für Elise.'),
 -- (2, 3, NOW() - INTERVAL '68 Days', 'Learned fingerpicking technique and practiced Hotel California.'),

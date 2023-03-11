@@ -4,6 +4,7 @@ const express = require("express");
 const { BadRequestError, UnauthorizedError } = require("../expressError");
 const { correctTeacherOrAdmin, loggedIn } = require("../middleware/auth");
 const Student = require("../models/student");
+const lessonSearchSchema = require("../schemas/lessonSearchSchema");
 const studentNewSchema = require("../schemas/studentNewSchema");
 const studentSearchSchema = require("../schemas/studentSearchSchema");
 const studentUpdateSchema = require("../schemas/studentUpdateSchema");
@@ -145,6 +146,46 @@ router.delete("/:id", loggedIn, async function (req, res, next) {
 		await Student.delete(req.params.id);
 		return res.json({ deleted: +req.params.id });
 	} catch (err) {
+		return next(err);
+	}
+});
+
+router.get("/:id/lessons", loggedIn, async function (req, res, next) {
+	/** GET /students/:id/lessons
+	 *
+	 * Endpoint to get a student's lessons
+	 *
+	 * Optional filtering - daysAgo
+	 *
+	 * Returns:
+	 * {lessons: [{id, studentName, date}]}
+	 *
+	 * Authorization is required: admin or same teacher as ":id"
+	 */
+
+	// Get queries
+	const q = req.query;
+	if (q.daysAgo !== undefined) {
+		q.daysAgo = +q.daysAgo;
+	} else {
+		q.daysAgo = 30;
+	}
+
+	try {
+		const validatedQuery = await lessonSearchSchema.validate(q);
+		const { student, lessons } = await Student.getLessons(
+			req.params.id,
+			validatedQuery
+		);
+		const teacher = res.locals.teacher;
+		if (!teacher.isAdmin && teacher.id !== student.teacherId) {
+			throw new UnauthorizedError();
+		}
+		return res.json({ lessons });
+	} catch (err) {
+		if (err.name === "ValidationError") {
+			return next(new BadRequestError(err.errors[0]));
+		}
 		return next(err);
 	}
 });

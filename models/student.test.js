@@ -267,27 +267,29 @@ describe("getLessons", () => {
 	// Object for current lesson
 	const lessonNow = {
 		id: expect.any(Number),
-		teacherName: "Teacher1",
+		notes: "This is a note",
 		date: expect.any(Date),
 	};
 
 	// Object for past lesson (More than 30 days ago)
 	const lessonPast = {
 		id: expect.any(Number),
-		teacherName: "Teacher2",
+		notes: "This is the last note",
 		date: expect.any(Date),
 	};
 
 	it("works: defaults to last 30 days", async () => {
-		const lessons = await Student.getLessons(testIds.students[0]);
-		expect(lessons).toEqual([lessonNow]);
+		const results = await Student.getLessons(testIds.students[0]);
+		expect(results.lessons).toEqual([lessonNow]);
+		expect(results.student.id).toEqual(testIds.students[0]);
+		expect(results.student.teacherId).toEqual(adminId);
 	});
 
 	it("filters by daysAgo", async () => {
-		const lessons = await Student.getLessons(testIds.students[0], {
+		const results = await Student.getLessons(testIds.students[0], {
 			daysAgo: 60,
 		});
-		expect(lessons).toEqual([lessonNow, lessonPast]);
+		expect(results.lessons).toEqual([lessonNow, lessonPast]);
 	});
 
 	it("throws NotFoundError if student not found", async () => {
