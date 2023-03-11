@@ -188,22 +188,16 @@ class Student {
 	 * @param {Number} id - student identifier
 	 * @param {Object} searchFilters - All optional - {daysAgo: 30}
 	 *
-	 * @returns {Array} [{id, teacherName, date}]
+	 * @returns {Array} {student : {...studentObject}, lessons : [{id, date}]}
 	 *
 	 */
 	static async getLessons(id, searchFilters = { daysAgo: 30 }) {
 		// Check that the student exists
-		await Student.get(id);
+		const student = await Student.get(id);
 
 		let query = `
-                SELECT
-                    l.id, t.name AS "teacherName", l.date
-                FROM
-                    lessons l
-                JOIN
-                    teachers t
-                ON
-                    t.id = l.teacher_id
+                SELECT	id, date, notes
+                FROM	lessons
                 `;
 		let whereExpressions = [];
 		let queryValues = [];
@@ -212,12 +206,12 @@ class Student {
 
 		// Add each search time that was provided to the whereExpressions and queryValues
 		if (daysAgo) {
-			whereExpressions.push(`l.date > NOW() - INTERVAL '${daysAgo} days'`);
+			whereExpressions.push(`date > NOW() - INTERVAL '${daysAgo} days'`);
 		}
 
 		// We also need to query by student
 		queryValues.push(id);
-		whereExpressions.push(`l.student_id = $${queryValues.length}`);
+		whereExpressions.push(`student_id = $${queryValues.length}`);
 
 		// Assemble the query
 		query += " WHERE " + whereExpressions.join(" AND ");
@@ -226,7 +220,9 @@ class Student {
 		// Make the request
 		const results = await db.query(query, queryValues);
 
-		return results.rows;
+		const lessons = results.rows;
+
+		return { student, lessons };
 	}
 
 	/**

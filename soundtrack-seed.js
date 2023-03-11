@@ -2,6 +2,7 @@ const SkillLevel = require("./models/skillLevel");
 const Teacher = require("./models/teacher");
 const Student = require("./models/student");
 const db = require("./db");
+const Lesson = require("./models/lesson");
 require("colors");
 
 async function createAll() {
@@ -11,6 +12,7 @@ async function createAll() {
 		const skillLevels = await createSkillLevels();
 		const teachers = await createTeachers();
 		const students = await createStudents(skillLevels, teachers);
+		const lessons = await createLessons(students, teachers);
 		console.log("Database seeded.".green);
 	} catch (error) {
 		console.error("Error seeding the database:".red, error);
@@ -148,6 +150,67 @@ async function createStudents(skillLevels, teachers) {
 			skillLevelId: skillLevels[0].id,
 		}),
 	]);
+
+	return students;
+}
+
+async function createLessons(students, teachers) {
+	const lessons = [];
+
+	for (let i = 0; i < 150; i++) {
+		const studentIndex = Math.floor(Math.random() * students.length);
+		const teacherIndex = Math.floor(Math.random() * teachers.length);
+		const student = students[studentIndex];
+		const teacher = teachers[teacherIndex];
+
+		const randomDaysAgo = Math.floor(Math.random() * 90) + 1; // between 1 and 90 days ago
+		const date = new Date(Date.now() - randomDaysAgo * 24 * 60 * 60 * 1000);
+
+		const minNoteLength = 50; // minimum length of notes in characters
+		const maxNoteLength = 500; // maximum length of notes in characters
+		const noteLength =
+			Math.floor(Math.random() * (maxNoteLength - minNoteLength + 1)) +
+			minNoteLength;
+		const noteWords = [
+			"Lorem",
+			"ipsum",
+			"dolor",
+			"sit",
+			"amet",
+			"consectetur",
+			"adipiscing",
+			"elit",
+			"sed",
+			"do",
+			"eiusmod",
+			"tempor",
+			"incididunt",
+			"ut",
+			"labore",
+			"et",
+			"dolore",
+			"magna",
+			"aliqua",
+		];
+		const numWords = Math.ceil(noteLength / 5); // assume an average of 5 characters per word
+		const noteWordsRandom = [];
+		for (let j = 0; j < numWords; j++) {
+			const randomIndex = Math.floor(Math.random() * noteWords.length);
+			noteWordsRandom.push(noteWords[randomIndex]);
+		}
+		const notes = noteWordsRandom.join(" ");
+
+		const lesson = await Lesson.create({
+			teacherId: teacher.id,
+			studentId: student.id,
+			notes: notes,
+			date: date,
+		});
+
+		lessons.push(lesson);
+	}
+
+	return lessons;
 }
 
 createAll();

@@ -393,3 +393,70 @@ describe("DELETE /students/:id", () => {
 		expect(resp.statusCode).toEqual(401);
 	});
 });
+
+describe("GET /students/:id/lessons", () => {
+	it("works for admin", async () => {
+		const resp = await request(app)
+			.get(`/students/${testIds.students[2]}/lessons`)
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			lessons: [
+				{
+					id: testIds.lessons[2],
+					date: expect.any(String),
+					notes: "This is yet another note",
+				},
+			],
+		});
+	});
+
+	it("works for same teacher as id", async () => {
+		const resp = await request(app)
+			.get(`/students/${testIds.students[2]}/lessons`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			lessons: [
+				{
+					id: testIds.lessons[2],
+					date: expect.any(String),
+					notes: "This is yet another note",
+				},
+			],
+		});
+	});
+
+	it("filters daysAgo", async () => {
+		const resp = await request(app)
+			.get(`/students/${testIds.students[0]}/lessons`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.query({ daysAgo: 60 });
+
+		expect(resp.statusCode).toEqual(200);
+		expect(resp.body).toEqual({
+			lessons: [
+				{
+					id: expect.any(Number),
+					date: expect.any(String),
+					notes: "This is a note",
+				},
+				{
+					id: expect.any(Number),
+					date: expect.any(String),
+					notes: "This is the last note",
+				},
+			],
+		});
+	});
+
+	it("returns unauthorized for different teacher than teacherId", async () => {
+		const resp = await request(app)
+			.get(`/students/${testIds.students[0]}/lessons`)
+			.set("Authorization", `Bearer ${teacherToken}`);
+
+		expect(resp.statusCode).toEqual(401);
+	});
+});
