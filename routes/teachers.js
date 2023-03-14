@@ -67,7 +67,7 @@ router.get("/:id", correctTeacherOrAdmin, async function (req, res, next) {
 	 * Returns:
 	 * { id, name, email, description, isAdmin }
 	 *
-	 * Authorization is required: admin or same teacher as ":id"
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
 		const teacher = await Teacher.get(req.params.id);
@@ -92,7 +92,7 @@ router.patch("/:id", correctTeacherOrAdmin, async function (req, res, next) {
 	 *
 	 * @throws {NotFoundError} if `id` is invalid
 	 *
-	 * Authorization is required: admin or same teacher as ":id"
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
 		const validatedBody = await teacherUpdateSchema.validate(req.body);
@@ -114,7 +114,7 @@ router.delete("/:id", correctTeacherOrAdmin, async function (req, res, next) {
 	 * Returns:
 	 * { deleted: id }
 	 *
-	 * Authorization is required: admin or same teacher as ":id"
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
 		await Teacher.delete(req.params.id);
@@ -137,7 +137,7 @@ router.get(
 		 * Returns:
 		 * {lessons: [{id, studentName, date}]}
 		 *
-		 * Authorization is required: admin or same teacher as ":id"
+		 * Authorization is required: admin or matching teacherId in JWT token
 		 */
 
 		// Get queries
@@ -175,7 +175,7 @@ router.get(
 		 * [{id, tonic, mode, type, description, dateAdded, skillLevelId}],
 		 * }
 		 *
-		 * Authorization is required: admin or same teacher as ":id"
+		 * Authorization is required: admin or matching teacherId in JWT token
 		 */
 		try {
 			const techniques = await Teacher.getTechniques(req.params.id);
@@ -200,7 +200,7 @@ router.get(
 		 * [{id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevelId}],
 		 * }
 		 *
-		 * Authorization is required: admin or same teacher as ":id"
+		 * Authorization is required: admin or matching teacherId in JWT token
 		 */
 		try {
 			const repertoire = await Teacher.getRepertoire(req.params.id);

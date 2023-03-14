@@ -4,13 +4,8 @@ const express = require("express");
 const { BadRequestError, UnauthorizedError } = require("../expressError");
 const { correctTeacherOrAdmin, loggedIn } = require("../middleware/auth");
 const Lesson = require("../models/lesson");
-const Student = require("../models/student");
 const lessonNewSchema = require("../schemas/lessonNewSchema");
-const lessonSearchSchema = require("../schemas/lessonSearchSchema");
 const lessonUpdateSchema = require("../schemas/lessonUpdateSchema");
-const studentNewSchema = require("../schemas/studentNewSchema");
-const studentSearchSchema = require("../schemas/studentSearchSchema");
-const studentUpdateSchema = require("../schemas/studentUpdateSchema");
 
 /** Initialize express router */
 const router = new express.Router();
@@ -25,7 +20,7 @@ router.post("/", correctTeacherOrAdmin, async function (req, res, next) {
 	 * Returns:
 	 * { lesson : { id, date, notes, studentId, teacherId }}
 	 *
-	 * Authorization is required: admin or same teacher as teacherId
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
 		const validatedBody = await lessonNewSchema.validate(req.body);
@@ -52,7 +47,7 @@ router.patch("/:id", loggedIn, async function (req, res, next) {
 	 * Returns:
 	 * { lesson : { id, date, notes, studentId, teacherId }}
 	 *
-	 * Authorization is required: admin or same teacher as teacherId
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
 		// Validate the data
@@ -96,7 +91,7 @@ router.delete("/:id", loggedIn, async function (req, res, next) {
 	 * Returns:
 	 * { deleted: id }
 	 *
-	 * Authorization is required: admin or same teacher as teacherId
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
 		const lesson = await Lesson.get(req.params.id);

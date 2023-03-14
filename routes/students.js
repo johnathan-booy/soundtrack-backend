@@ -24,7 +24,7 @@ router.get("/", correctTeacherOrAdmin, async function (req, res, next) {
 	 * Returns:
 	 * {students: [{id, name, email, skillLevelId}]}
 	 *
-	 * Authorization is required: admin or same teacher as teacherId
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 
 	// Get queries
@@ -55,7 +55,7 @@ router.get("/:id", loggedIn, async function (req, res, next) {
 	 * Returns:
 	 * { id, name, email, description, skillLevelId, teacherId }
 	 *
-	 * Authorization is required: admin or same teacher as teacherId
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
 		const student = await Student.get(req.params.id);
@@ -81,7 +81,7 @@ router.post("/", correctTeacherOrAdmin, async function (req, res, next) {
 	 * Returns:
 	 * { student : { id, name, email, description, skillLevelId, teacherId }}
 	 *
-	 * Authorization is required: admin or same teacher as teacherId
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
 		const validatedBody = await studentNewSchema.validate(req.body);
@@ -108,7 +108,7 @@ router.patch("/:id", loggedIn, async function (req, res, next) {
 	 * Returns:
 	 * { id, name, email, description, skillLevelId, teacherId }
 	 *
-	 * Authorization is required: admin or same teacher as teacherId
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
 		const validatedBody = await studentUpdateSchema.validate(req.body);
@@ -135,7 +135,7 @@ router.delete("/:id", loggedIn, async function (req, res, next) {
 	 * Returns:
 	 * { deleted: id }
 	 *
-	 * Authorization is required: admin or same teacher as teacherId
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
 		const student = await Student.get(req.params.id);
@@ -160,7 +160,7 @@ router.get("/:id/lessons", loggedIn, async function (req, res, next) {
 	 * Returns:
 	 * {lessons: [{id, studentName, date}]}
 	 *
-	 * Authorization is required: admin or same teacher as ":id"
+	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 
 	// Get queries
