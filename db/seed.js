@@ -1,14 +1,12 @@
-const SkillLevel = require("./models/skillLevel");
-const Teacher = require("./models/teacher");
-const Student = require("./models/student");
+const SkillLevel = require("../models/skillLevel");
+const Teacher = require("../models/teacher");
+const Student = require("../models/student");
 const db = require("./db");
-const Lesson = require("./models/lesson");
+const Lesson = require("../models/lesson");
 require("colors");
 
 async function createAll() {
 	try {
-		console.log();
-		console.log();
 		const skillLevels = await createSkillLevels();
 		const teachers = await createTeachers();
 		const students = await createStudents(skillLevels, teachers);
@@ -18,7 +16,7 @@ async function createAll() {
 		console.error("Error seeding the database:".red, error);
 		process.exit(1);
 	} finally {
-		db.end();
+		db.destroy();
 	}
 }
 
@@ -34,7 +32,7 @@ async function createSkillLevels() {
 		SkillLevel.create("Advanced 2"),
 		SkillLevel.create("Advanced 3"),
 	]);
-
+	console.log(`Added ${skillLevels.length} Skill Levels`.blue);
 	return skillLevels;
 }
 
@@ -63,6 +61,7 @@ async function createTeachers() {
 			isAdmin: false,
 		}),
 	]);
+	console.log(`Added ${teachers.length} Teachers`.blue);
 
 	return teachers;
 }
@@ -150,6 +149,7 @@ async function createStudents(skillLevels, teachers) {
 			skillLevelId: skillLevels[0].id,
 		}),
 	]);
+	console.log(`Added ${students.length} Students`.blue);
 
 	return students;
 }
@@ -209,6 +209,7 @@ async function createLessons(students, teachers) {
 
 		lessons.push(lesson);
 	}
+	console.log(`Added ${lessons.length} Lessons`.blue);
 
 	return lessons;
 }

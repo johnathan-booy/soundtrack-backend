@@ -1,17 +1,10 @@
 const Lesson = require("./lesson");
-const {
-	commonBeforeAll,
-	commonBeforeEach,
-	commonAfterEach,
-	commonAfterAll,
-	testIds,
-} = require("../_testCommon");
+const { commonBeforeEach, commonAfterAll, testIds } = require("../_testCommon");
 const { NotFoundError, BadRequestError } = require("../expressError");
-const db = require("../db");
+const db = require("../db/db");
+const { v4: uuid } = require("uuid");
 
-beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
-afterEach(commonAfterEach);
 afterAll(commonAfterAll);
 
 describe("Lesson", () => {
@@ -55,13 +48,15 @@ describe("Lesson", () => {
 				teacherId: testIds.teachers[0],
 			});
 
-			const found = await db.query("SELECT * FROM lessons WHERE id = $1", [
-				lesson.id,
-			]);
-			expect(found.rows.length).toEqual(1);
-			expect(found.rows[0].student_id).toEqual(testIds.students[1]);
-			expect(found.rows[0].teacher_id).toEqual(testIds.teachers[0]);
-			expect(found.rows[0].notes).toEqual("This is a new note");
+			const rows = await db
+				.select("*")
+				.from("lessons")
+				.where({ id: lesson.id });
+
+			expect(rows.length).toEqual(1);
+			expect(rows[0].student_id).toEqual(testIds.students[1]);
+			expect(rows[0].teacher_id).toEqual(testIds.teachers[0]);
+			expect(rows[0].notes).toEqual("This is a new note");
 		});
 
 		test("throws a bad request with invalid studentId", async () => {
@@ -75,7 +70,10 @@ describe("Lesson", () => {
 
 		test("throws a bad request with invalid teacherId", async () => {
 			try {
-				await Lesson.create({ teacherId: -1, studentId: testIds.students[0] });
+				await Lesson.create({
+					teacherId: uuid(),
+					studentId: testIds.students[0],
+				});
 				fail();
 			} catch (err) {
 				expect(err instanceof BadRequestError).toBeTruthy();
@@ -162,7 +160,7 @@ describe("Lesson", () => {
 
 		test("throws BadRequestError with invalid teacherId", async () => {
 			try {
-				await Lesson.update(testIds.lessons[0], { teacherId: -1 });
+				await Lesson.update(testIds.lessons[0], { teacherId: uuid() });
 				fail();
 			} catch (err) {
 				expect(err instanceof BadRequestError).toBeTruthy();
@@ -182,10 +180,11 @@ describe("Lesson", () => {
 	describe("delete", () => {
 		test("deletes a lesson", async () => {
 			await Lesson.delete(testIds.lessons[0]);
-			const result = await db.query("SELECT id FROM lessons WHERE id=$1", [
-				testIds.lessons[0],
-			]);
-			expect(result.rows.length).toEqual(0);
+			const rows = await db
+				.select("*")
+				.from("lessons")
+				.where({ id: testIds.lessons[0] });
+			expect(rows.length).toEqual(0);
 		});
 
 		test("throws NotFoundError if no such lesson", async () => {

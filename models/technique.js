@@ -1,7 +1,8 @@
-const db = require("../db");
+const snakecaseKeys = require("snakecase-keys");
+const db = require("../db/db");
 const { NotFoundError, BadRequestError } = require("../expressError");
 const handlePostgresError = require("../helpers/handlePostgresError");
-const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
+const { techniqueCols } = require("./_columns");
 
 class Technique {
 	/**
@@ -10,16 +11,10 @@ class Technique {
 	 * @returns {Array} An array of techniques [{id, tonic, mode, type, description, skillLevelId, dateAdded, teacherId}]
 	 */
 	static async getAll() {
-		const results = await db.query(
-			`
-				SELECT 	id, tonic, mode, type, description, 
-						skill_level_id AS "skillLevelId", date_added AS "dateAdded", 
-						teacher_id AS "teacherId"
-				FROM 	techniques
-				ORDER BY date_added DESC
-			`
-		);
-		return results.rows;
+		const results = await db("techniques")
+			.select(techniqueCols)
+			.orderBy("date_added");
+		return results;
 	}
 
 	/**
@@ -33,15 +28,9 @@ class Technique {
 	 */
 
 	static async get(id) {
-		const res = await db.query(
-			`SELECT id, tonic, mode, type, description, date_added AS "dateAdded",
-                    teacher_id AS "teacherId", skill_level_id AS "skillLevelId"
-            FROM techniques
-            WHERE id = $1`,
-			[id]
-		);
-
-		const technique = res.rows[0];
+		const [technique] = await db("techniques")
+			.select(techniqueCols)
+			.where({ id });
 
 		if (!technique) throw new NotFoundError(`No technique with id: ${id}`);
 
@@ -68,15 +57,18 @@ class Technique {
 		try {
 			if (!teacherId) throw new BadRequestError("teacherId is required");
 
-			const res = await db.query(
-				`
-                INSERT INTO techniques (tonic, mode, type, description, skill_level_id, teacher_id)
-                VALUES      ($1, $2, $3, $4, $5, $6)
-                RETURNING   id, tonic, mode, type, description, date_added AS "dateAdded",
-                            skill_level_id AS "skillLevelId", teacher_id AS "teacherId"`,
-				[tonic, mode, type, description, skillLevelId, teacherId]
-			);
-			return res.rows[0];
+			const [technique] = await db("techniques")
+				.insert({
+					tonic,
+					mode,
+					type,
+					description,
+					skill_level_id: skillLevelId,
+					teacher_id: teacherId,
+				})
+				.returning(techniqueCols);
+
+			return technique;
 		} catch (err) {
 			handlePostgresError(err);
 		}
@@ -97,29 +89,11 @@ class Technique {
 	 */
 	static async update(id, data) {
 		try {
-			const { setCols, values } = sqlForPartialUpdate(data, {
-				skillLevelId: "skill_level_id",
-				teacherId: "teacher_id",
-			});
-			const idVarIdx = values.length + 1;
-
-			// Step 1: Update the technique item without the skillLevel field
-			let querySql = `
-            UPDATE techniques AS t
-            SET ${setCols}
-            WHERE t.id = $${idVarIdx}
-            RETURNING
-              t.id,
-              t.tonic,
-              t.mode,
-              t.type,
-              t.description,
-              t.date_added AS "dateAdded",
-              t.skill_level_id AS "skillLevelId",
-              t.teacher_id AS "teacherId"
-          `;
-			let result = await db.query(querySql, [...values, id]);
-			let technique = result.rows[0];
+			const snakeCaseData = snakecaseKeys(data, { deep: true });
+			const [technique] = await db("techniques")
+				.where({ id })
+				.update(snakeCaseData)
+				.returning(techniqueCols);
 
 			if (!technique) {
 				throw new NotFoundError(`No technique found with id: ${id}`);
@@ -139,15 +113,7 @@ class Technique {
 	 * @throws {NotFoundError} if `id` is invalid
 	 */
 	static async delete(id) {
-		const result = await db.query(
-			`
-            DELETE FROM techniques
-            WHERE       id = $1
-            RETURNING   id
-            `,
-			[id]
-		);
-		const technique = result.rows[0];
+		const [technique] = await db("techniques").where({ id }).del(["id"]);
 
 		if (!technique)
 			throw new NotFoundError(`No technique found with id: ${id}`);

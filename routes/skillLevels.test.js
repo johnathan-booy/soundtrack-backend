@@ -5,16 +5,13 @@ const request = require("supertest");
 const app = require("../app");
 
 const {
-	commonBeforeAll,
 	commonBeforeEach,
-	commonAfterEach,
 	commonAfterAll,
 	testIds,
+	commonAfterEach,
 } = require("../_testCommon");
 
-beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
-afterEach(commonAfterEach);
 afterAll(commonAfterAll);
 
 describe("GET /skill-levels", () => {

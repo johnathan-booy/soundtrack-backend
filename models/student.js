@@ -1,13 +1,13 @@
 "use strict";
 
-const db = require("../db");
+const db = require("../db/db");
 const { BadRequestError, NotFoundError } = require("../expressError");
-const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
 const Technique = require("./technique");
 const Repertoire = require("./repertoire");
 const handlePostgresError = require("../helpers/handlePostgresError");
-const { teacherId } = require("../_testCommon");
 const Teacher = require("./teacher");
+const { studentCols, studentMinCols, lessonMinCols } = require("./_columns");
+const snakecaseKeys = require("snakecase-keys");
 
 /** Functions for students */
 class Student {
@@ -28,15 +28,15 @@ class Student {
 		skillLevelId = null,
 	}) {
 		try {
-			const results = await db.query(
-				`INSERT INTO students
-				(name, email, teacher_id, description, skill_level_id)
-				VALUES ($1, $2, $3, $4, $5)
-				RETURNING id, name, email, description, skill_level_id AS "skillLevelId", teacher_id AS "teacherId"`,
-				[name, email, teacherId, description, skillLevelId]
-			);
-
-			const student = results.rows[0];
+			const [student] = await db("students")
+				.insert({
+					name,
+					email,
+					teacher_id: teacherId,
+					description,
+					skill_level_id: skillLevelId,
+				})
+				.returning(studentCols);
 
 			return student;
 		} catch (err) {
@@ -44,49 +44,34 @@ class Student {
 		}
 	}
 
-	/** Get all students
+	/**
+	 * Get all students
 	 *
 	 * @param {Object} searchFilters - All optional - {teacherId, name, skillLevelId}
 	 *
 	 * @returns {Array} [{id, name, email, skillLevel}]
-	 *
 	 */
 	static async getAll(searchFilters = {}) {
-		let query = `
-					SELECT	id, name, email, skill_level_id AS "skillLevelId"
-					FROM	students
-					`;
-		let whereExpressions = [];
-		let queryValues = [];
-
 		const { teacherId, name, skillLevelId } = searchFilters;
 
-		// Add each search time that was provided to the whereExpressions and queryValues
-		if (teacherId) {
-			// Check that the teacher exists
-			await Teacher.get(teacherId);
+		if (teacherId) await Teacher.get(teacherId);
 
-			queryValues.push(teacherId);
-			whereExpressions.push(`teacher_id = $${queryValues.length}`);
-		}
-		if (name) {
-			queryValues.push(`%${name}%`);
-			whereExpressions.push(`name ILIKE $${queryValues.length}`);
-		}
-		if (skillLevelId !== undefined) {
-			queryValues.push(skillLevelId);
-			whereExpressions.push(`skill_level_id = $${queryValues.length}`);
-		}
+		const results = await db("students")
+			.select(studentMinCols)
+			.modify((qb) => {
+				if (teacherId) {
+					qb.where("teacher_id", teacherId);
+				}
+				if (name) {
+					qb.where("name", "ilike", `%${name}%`);
+				}
+				if (skillLevelId !== undefined) {
+					qb.where("skill_level_id", skillLevelId);
+				}
+			})
+			.orderBy("name");
 
-		// Assemble the query
-		if (whereExpressions.length > 0) {
-			query += " WHERE " + whereExpressions.join(" AND ");
-		}
-		query += " ORDER BY name";
-
-		const results = await db.query(query, queryValues);
-
-		return results.rows;
+		return results;
 	}
 
 	/**
@@ -97,15 +82,7 @@ class Student {
 	 * @throws {NotFoundError} If no student is found with the given id.
 	 */
 	static async get(id) {
-		const result = await db.query(
-			`
-			SELECT	id, name, email, description, skill_level_id AS "skillLevelId", teacher_id AS "teacherId"
-			FROM	students
-			WHERE	id = $1`,
-			[id]
-		);
-
-		const student = result.rows[0];
+		const [student] = await db("students").select(studentCols).where({ id });
 
 		if (!student) throw new NotFoundError(`No student found with id: ${id}`);
 
@@ -131,26 +108,12 @@ class Student {
 	 */
 	static async update(id, data) {
 		try {
-			const { setCols, values } = sqlForPartialUpdate(data, {
-				teacherId: "teacher_id",
-				skillLevelId: "skill_level_id",
-			});
-			const idVarIdx = values.length + 1;
+			const snakeCaseData = snakecaseKeys(data, { deep: true });
 
-			const querySql = `
-				UPDATE students
-				SET ${setCols}
-				WHERE id = $${idVarIdx}
-				RETURNING
-					id,
-					name,
-					email,
-					teacher_id AS "teacherId",
-					description,
-					skill_level_id AS "skillLevelId"`;
-
-			const result = await db.query(querySql, [...values, id]);
-			const student = result.rows[0];
+			const [student] = await db("students")
+				.where({ id })
+				.update(snakeCaseData)
+				.returning(studentCols);
 
 			if (!student) throw new NotFoundError(`No student found with id: ${id}`);
 
@@ -165,19 +128,7 @@ class Student {
 	 * @param {String} id student identifier
 	 */
 	static async delete(id) {
-		const results = await db.query(
-			`
-        DELETE FROM
-            students
-        WHERE
-            id = $1
-        RETURNING
-            name
-    `,
-			[id]
-		);
-
-		const student = results.rows[0];
+		const [student] = await db("students").where({ id }).del(["id"]);
 
 		if (!student) throw new NotFoundError(`No student found with id: ${id}`);
 	}
@@ -195,32 +146,21 @@ class Student {
 		// Check that the student exists
 		const student = await Student.get(id);
 
-		let query = `
-                SELECT	id, date, notes
-                FROM	lessons
-                `;
-		let whereExpressions = [];
-		let queryValues = [];
-
 		const { daysAgo } = searchFilters;
 
-		// Add each search time that was provided to the whereExpressions and queryValues
-		if (daysAgo) {
-			whereExpressions.push(`date > NOW() - INTERVAL '${daysAgo} days'`);
-		}
-
-		// We also need to query by student
-		queryValues.push(id);
-		whereExpressions.push(`student_id = $${queryValues.length}`);
-
-		// Assemble the query
-		query += " WHERE " + whereExpressions.join(" AND ");
-		query += " ORDER BY date DESC";
-
-		// Make the request
-		const results = await db.query(query, queryValues);
-
-		const lessons = results.rows;
+		const lessons = await db("lessons")
+			.select(lessonMinCols)
+			.where("student_id", id)
+			.modify((qb) => {
+				if (daysAgo) {
+					qb.where(
+						"date",
+						">",
+						new Date(new Date() - daysAgo * 24 * 60 * 60 * 1000)
+					);
+				}
+			})
+			.orderBy("date", "desc");
 
 		return { student, lessons };
 	}

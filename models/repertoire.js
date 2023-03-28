@@ -1,7 +1,8 @@
-const db = require("../db");
+const snakecaseKeys = require("snakecase-keys");
+const db = require("../db/db");
 const { NotFoundError, BadRequestError } = require("../expressError");
 const handlePostgresError = require("../helpers/handlePostgresError");
-const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
+const { repertoireCols } = require("./_columns");
 
 class Repertoire {
 	/**
@@ -10,17 +11,11 @@ class Repertoire {
 	 * @returns {Array} [{id, name, composer, arranger, genre, sheetMusicUrl, description, dateAdded, skillLevelId, teacherId}]
 	 */
 	static async getAll() {
-		const results = await db.query(
-			`
-            SELECT 	id, name, composer, arranger, genre, 
-					sheet_music_url AS "sheetMusicUrl", description, 
-					date_added AS "dateAdded", skill_level_id AS "skillLevelId", 
-					teacher_id AS "teacherId"
-            FROM 	repertoire
-            ORDER BY name
-        `
-		);
-		return results.rows;
+		const results = await db("repertoire")
+			.select(repertoireCols)
+			.orderBy("name");
+
+		return results;
 	}
 
 	/**
@@ -33,16 +28,9 @@ class Repertoire {
 	 * @throws {NotFoundError} If repertoire item is not found.
 	 */
 	static async get(id) {
-		const res = await db.query(
-			`SELECT id, name, composer, arranger, genre, sheet_music_url AS "sheetMusicUrl", 
-					description, date_added AS "dateAdded",
-                    teacher_id AS "teacherId", skill_level_id AS "skillLevelId"
-            FROM 	repertoire AS r
-            WHERE 	id = $1`,
-			[id]
-		);
-
-		const repertoire = res.rows[0];
+		const [repertoire] = await db("repertoire")
+			.select(repertoireCols)
+			.where({ id });
 
 		if (!repertoire)
 			throw new NotFoundError(`No repertoire item with id: ${id}`);
@@ -68,24 +56,21 @@ class Repertoire {
 	}) {
 		try {
 			if (!teacherId) throw new BadRequestError("teacherId is required");
-			const res = await db.query(
-				`
-                INSERT INTO repertoire (name, composer, arranger, genre, sheet_music_url, description, skill_level_id, teacher_id)
-                VALUES      ($1, $2, $3, $4, $5, $6, $7, $8)
-                RETURNING   id, name, composer, arranger, genre, sheet_music_url AS "sheetMusicUrl", description, date_added AS "dateAdded",
-                            skill_level_id AS "skillLevelId", teacher_id AS "teacherId"`,
-				[
+
+			const [repertoire] = await db("repertoire")
+				.insert({
 					name,
 					composer,
 					arranger,
 					genre,
-					sheetMusicUrl,
+					sheet_music_url: sheetMusicUrl,
 					description,
-					skillLevelId,
-					teacherId,
-				]
-			);
-			return res.rows[0];
+					skill_level_id: skillLevelId,
+					teacher_id: teacherId,
+				})
+				.returning(repertoireCols);
+
+			return repertoire;
 		} catch (err) {
 			handlePostgresError(err);
 		}
@@ -105,32 +90,11 @@ class Repertoire {
 	 */
 	static async update(id, data) {
 		try {
-			const { setCols, values } = sqlForPartialUpdate(data, {
-				skillLevelId: "skill_level_id",
-				sheetMusicUrl: "sheet_music_url",
-				teacherId: "teacher_id",
-			});
-			const idVarIdx = values.length + 1;
-
-			// Step 1: Update the repertoire item without the skillLevel field
-			let querySql = `
-            UPDATE repertoire AS r
-            SET ${setCols}
-            WHERE r.id = $${idVarIdx}
-            RETURNING
-              r.id,
-              r.name,
-              r.composer,
-              r.arranger,
-              r.genre,
-              r.sheet_music_url AS "sheetMusicUrl",
-              r.description,
-              r.date_added AS "dateAdded",
-              r.skill_level_id AS "skillLevelId",
-              r.teacher_id AS "teacherId"
-          `;
-			let result = await db.query(querySql, [...values, id]);
-			let repertoire = result.rows[0];
+			const snakeCaseData = snakecaseKeys(data, { deep: true });
+			const [repertoire] = await db("repertoire")
+				.where({ id })
+				.update(snakeCaseData)
+				.returning(repertoireCols);
 
 			if (!repertoire) {
 				throw new NotFoundError(`No repertoire item found with id: ${id}`);
@@ -150,15 +114,7 @@ class Repertoire {
 	 * @throws {NotFoundError} if `id` is invalid
 	 */
 	static async delete(id) {
-		const result = await db.query(
-			`
-            DELETE FROM repertoire
-            WHERE       id = $1
-            RETURNING   id
-            `,
-			[id]
-		);
-		const repertoire = result.rows[0];
+		const [repertoire] = await db("repertoire").where({ id }).del(["id"]);
 
 		if (!repertoire)
 			throw new NotFoundError(`No repertoire item found with id: ${id}`);

@@ -1,9 +1,10 @@
 "use strict";
 
-const db = require("../db");
+const db = require("../db/db");
 const { NotFoundError } = require("../expressError");
-const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
 const handlePostgresError = require("../helpers/handlePostgresError");
+const snakecaseKeys = require("snakecase-keys");
+const { lessonCols } = require("./_columns");
 
 /** Functions for lessons */
 class Lesson {
@@ -15,18 +16,20 @@ class Lesson {
 	 * @throws {NotFoundError} If no lesson is found with the given id.
 	 */
 	static async get(id) {
-		const result = await db.query(
-			`
-			SELECT	l.id, l.date, l.notes, l.student_id AS "studentId", s.name AS "studentName",
-					l.teacher_id AS "teacherId", t.name AS "teacherName"
-			FROM	lessons l
-			JOIN	students s ON s.id = l.student_id
-			JOIN	teachers t ON t.id = l.teacher_id
-			WHERE	l.id = $1`,
-			[id]
-		);
-
-		const lesson = result.rows[0];
+		const lesson = await db("lessons as l")
+			.select(
+				"l.id",
+				"l.date",
+				"l.notes",
+				"l.student_id AS studentId",
+				"s.name AS studentName",
+				"l.teacher_id AS teacherId",
+				"t.name AS teacherName"
+			)
+			.join("students as s", "s.id", "l.student_id")
+			.join("teachers as t", "t.id", "l.teacher_id")
+			.where("l.id", id)
+			.first();
 
 		if (!lesson) throw new NotFoundError(`No lesson found with id: ${id}`);
 
@@ -42,21 +45,13 @@ class Lesson {
 	 *
 	 * @throws {BadRequestError} If the `teacherId` or `skillLevelId` does not exist in the database, or the email already exists
 	 */
-	static async create({ teacherId, studentId, notes, date = "NOW()" }) {
+	static async create({ teacherId, studentId, notes, date = new Date() }) {
 		try {
-			const results = await db.query(
-				`
-				INSERT INTO	lessons
-							(notes, student_id, teacher_id, date)
-				VALUES 		($1, $2, $3, $4)
-				RETURNING 	id, date, notes, student_id AS "studentId",
-							teacher_id AS "teacherId"
-				`,
+			const result = await db("lessons")
+				.insert({ notes, student_id: studentId, teacher_id: teacherId, date })
+				.returning(lessonCols);
 
-				[notes, studentId, teacherId, date]
-			);
-
-			return results.rows[0];
+			return result[0];
 		} catch (err) {
 			handlePostgresError(err);
 		}
@@ -78,22 +73,11 @@ class Lesson {
 	 */
 	static async update(id, data) {
 		try {
-			const { setCols, values } = sqlForPartialUpdate(data, {
-				teacherId: "teacher_id",
-				studentId: "student_id",
-			});
-
-			const idVarIdx = values.length + 1;
-
-			const querySql = `
-				UPDATE 		lessons
-				SET 		${setCols}
-				WHERE 		id = $${idVarIdx}
-				RETURNING 	id, date, notes, student_id AS "studentId",
-							teacher_id AS "teacherId"`;
-
-			const result = await db.query(querySql, [...values, id]);
-			const lesson = result.rows[0];
+			const snakeCaseData = snakecaseKeys(data, { deep: true });
+			const [lesson] = await db("lessons")
+				.where({ id })
+				.update(snakeCaseData)
+				.returning(lessonCols);
 
 			if (!lesson) throw new NotFoundError(`No lesson found with id: ${id}`);
 
@@ -108,21 +92,9 @@ class Lesson {
 	 * @param {number} id - lesson identifier
 	 */
 	static async delete(id) {
-		const results = await db.query(
-			`
-	    DELETE FROM
-	        lessons
-	    WHERE
-	        id = $1
-	    RETURNING
-	        id
-	`,
-			[id]
-		);
+		const [lesson] = await db("lessons").where({ id }).del(["id"]);
 
-		const student = results.rows[0];
-
-		if (!student) throw new NotFoundError(`No lesson found with id: ${id}`);
+		if (!lesson) throw new NotFoundError(`No lesson found with id: ${id}`);
 	}
 }
 

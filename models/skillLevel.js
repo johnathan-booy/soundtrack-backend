@@ -1,6 +1,7 @@
-const db = require("../db");
+const db = require("../db/db");
 const { NotFoundError } = require("../expressError");
 const handlePostgresError = require("../helpers/handlePostgresError");
+const { skillLevelCols } = require("./_columns");
 
 class SkillLevel {
 	/** Create a new skill level with the given name. Returns the new skill level object.
@@ -9,11 +10,10 @@ class SkillLevel {
 	 */
 	static async create(name) {
 		try {
-			const result = await db.query(
-				`INSERT INTO skill_levels (name) VALUES ($1) RETURNING id, name`,
-				[name]
-			);
-			return result.rows[0];
+			const [result] = await db("skill_levels")
+				.insert({ name })
+				.returning(skillLevelCols);
+			return result;
 		} catch (err) {
 			handlePostgresError(err);
 		}
@@ -24,12 +24,10 @@ class SkillLevel {
 	 * @throws {NotFoundError} If no skillLevel is found with the given id.
 	 */
 	static async get(id) {
-		const result = await db.query(
-			`SELECT id, name FROM skill_levels WHERE id = $1`,
-			[id]
-		);
+		const [skillLevel] = await db("skill_levels")
+			.where({ id })
+			.select(skillLevelCols);
 
-		const skillLevel = result.rows[0];
 		if (!skillLevel)
 			throw new NotFoundError(`No skillLevel found with id: ${id}`);
 		return skillLevel;
@@ -37,19 +35,18 @@ class SkillLevel {
 
 	/** Retrieve all skill levels. Returns an array of skill level objects. */
 	static async getAll() {
-		const result = await db.query(
-			`SELECT id, name FROM skill_levels ORDER BY id`
-		);
-		return result.rows;
+		const result = await db("skill_levels")
+			.select(skillLevelCols)
+			.orderBy("id");
+		return result;
 	}
 
 	/** Delete the skill level with the given ID. Returns undefined */
 	static async delete(id) {
-		const result = await db.query(
-			`DELETE FROM skill_levels WHERE id = $1 RETURNING id, name`,
-			[id]
-		);
-		const skillLevel = result.rows[0];
+		const [skillLevel] = await db("skill_levels")
+			.where({ id })
+			.delete(skillLevelCols)
+			.returning("*");
 		if (!skillLevel)
 			throw new NotFoundError(`No skillLevel found with id: ${id}`);
 	}

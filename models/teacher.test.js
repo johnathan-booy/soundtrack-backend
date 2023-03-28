@@ -1,4 +1,4 @@
-const db = require("../db");
+const db = require("../db/db");
 const {
 	BadRequestError,
 	UnauthorizedError,
@@ -8,15 +8,11 @@ const Teacher = require("./teacher");
 const {
 	testIds,
 	commonAfterAll,
-	commonAfterEach,
-	commonBeforeAll,
 	commonBeforeEach,
 	adminId,
 } = require("../_testCommon");
 
-beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
-afterEach(commonAfterEach);
 afterAll(commonAfterAll);
 
 // Authenticate a teacher
@@ -71,6 +67,7 @@ describe("register", () => {
 		description: "test description",
 		isAdmin: true,
 	};
+
 	it("works", async () => {
 		let teacher = await Teacher.register({
 			...newTeacher,
@@ -78,14 +75,15 @@ describe("register", () => {
 		});
 		expect(teacher).toEqual({ ...newTeacher, id: expect.any(String) });
 
-		const found = await db.query(
-			"SELECT * FROM teachers WHERE name = 'testuser'"
-		);
-		expect(found.rows.length).toEqual(1);
-		expect(found.rows[0].email).toEqual("test@test.com");
-		expect(found.rows[0].description).toEqual("test description");
-		expect(found.rows[0].password.startsWith("$2b$")).toEqual(true);
-		expect(found.rows[0].is_admin).toEqual(true);
+		const rows = await db
+			.select("*")
+			.from("teachers")
+			.where({ name: "testuser" });
+		expect(rows.length).toEqual(1);
+		expect(rows[0].email).toEqual("test@test.com");
+		expect(rows[0].description).toEqual("test description");
+		expect(rows[0].password.startsWith("$2b$")).toEqual(true);
+		expect(rows[0].is_admin).toEqual(true);
 	});
 
 	it("throws a bad request with duplicate email", async () => {
@@ -179,11 +177,11 @@ describe("update", () => {
 			isAdmin: true,
 		});
 
-		const found = await db.query(
-			`SELECT password FROM teachers WHERE id = '${testIds.teachers[0]}'`
-		);
-		expect(found.rows.length).toEqual(1);
-		expect(found.rows[0].password.startsWith("$2b$")).toEqual(true);
+		const [found] = await db
+			.select("password")
+			.from("teachers")
+			.where({ id: testIds.teachers[0] });
+		expect(found.password.startsWith("$2b$")).toEqual(true);
 	});
 
 	it("throws NotFoundError if teacher id not found", async () => {
@@ -201,12 +199,12 @@ describe("delete", () => {
 	it("works", async () => {
 		await Teacher.delete(testIds.teachers[0]);
 
-		const deletedTeacher = await db.query(
-			`SELECT * FROM teachers WHERE id = $1`,
-			[testIds.teachers[0]]
-		);
+		const results = await db
+			.select("*")
+			.from("teachers")
+			.where({ id: testIds.teachers[0] });
 
-		expect(deletedTeacher.rows.length).toBe(0);
+		expect(results.length).toBe(0);
 	});
 
 	it("throws NotFoundError if teacher not found", async () => {

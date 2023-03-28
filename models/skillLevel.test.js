@@ -1,19 +1,12 @@
 "use strict";
 
 const SkillLevel = require("./SkillLevel");
-const db = require("../db");
-const {
-	commonBeforeAll,
-	commonAfterAll,
-	commonBeforeEach,
-	commonAfterEach,
-} = require("../_testCommon");
+const db = require("../db/db");
+const { commonBeforeEach, commonAfterAll } = require("../_testCommon");
 const { NotFoundError } = require("../expressError");
 
-beforeAll(commonBeforeAll);
-afterAll(commonAfterAll);
 beforeEach(commonBeforeEach);
-afterEach(commonAfterEach);
+afterAll(commonAfterAll);
 
 describe("SkillLevel", function () {
 	describe("create", function () {
@@ -25,12 +18,10 @@ describe("SkillLevel", function () {
 				name: "New Level",
 			});
 
-			const result = await db.query(
-				`SELECT name
-           FROM skill_levels
-           WHERE name = 'New Level'`
-			);
-			expect(result.rows).toEqual([{ name: "New Level" }]);
+			const [result] = await db("skill_levels")
+				.select("name")
+				.where({ name: "New Level" });
+			expect(result).toEqual({ name: "New Level" });
 		});
 
 		test("throws error with duplicate", async function () {
@@ -83,10 +74,10 @@ describe("SkillLevel", function () {
 			const skillLevel = await SkillLevel.create("New Level");
 			await SkillLevel.delete(skillLevel.id);
 
-			const res = await db.query(
-				"SELECT name FROM skill_levels WHERE name = 'New Level'"
-			);
-			expect(res.rows.length).toEqual(0);
+			const res = await db("skill_levels")
+				.select("name")
+				.where({ name: "New Level" });
+			expect(res).toHaveLength(0);
 		});
 
 		test("not found if no such level", async function () {

@@ -9,16 +9,12 @@ const {
 	teacherToken,
 	adminId,
 	teacherId,
-	commonBeforeAll,
 	commonBeforeEach,
-	commonAfterEach,
 	commonAfterAll,
 	testIds,
 } = require("../_testCommon");
 
-beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
-afterEach(commonAfterEach);
 afterAll(commonAfterAll);
 
 describe("GET /students", () => {

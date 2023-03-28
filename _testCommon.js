@@ -1,134 +1,196 @@
 "use strict";
 const bcrypt = require("bcrypt");
-
-const db = require("./db.js");
+const db = require("./db/db");
 const { BCRYPT_WORK_FACTOR } = require("./config");
 const createToken = require("./helpers/createToken.js");
+const cleaner = require("knex-cleaner");
+const { v4: uuid } = require("uuid");
 
 const testIds = {};
-async function commonBeforeAll() {
-	await db.query("DELETE FROM student_repertoire");
-	await db.query("DELETE FROM student_techniques");
-	await db.query("DELETE FROM lesson_repertoire");
-	await db.query("DELETE FROM lesson_techniques");
-	await db.query("DELETE FROM techniques");
-	await db.query("DELETE FROM repertoire");
-	await db.query("DELETE FROM lessons");
-	await db.query("DELETE FROM students");
-	await db.query("DELETE FROM teachers");
-	await db.query("DELETE FROM skill_levels");
+
+const adminId = uuid();
+const teacherId = uuid();
+
+const adminToken = createToken({
+	id: adminId,
+	isAdmin: true,
+});
+const teacherToken = createToken({
+	id: teacherId,
+	isAdmin: false,
+});
+
+async function commonBeforeEach() {
+	await cleaner.clean(db, {
+		mode: "truncate", // reset auto-increment values
+		restartIdentity: true,
+	});
 
 	// Skill Levels
-	let results;
-	results = await db.query(
-		`
-    INSERT INTO skill_levels (name)
-    VALUES ('Beginner'), ('Intermediate'), ('Advanced')
-    RETURNING id`
-	);
-	testIds.skillLevels = [...results.rows.map((r) => r.id)];
+	const skillLevels = [
+		{ name: "Beginner" },
+		{ name: "Intermediate" },
+		{ name: "Advanced" },
+	];
+	var results = await db("skill_levels").insert(skillLevels, "id");
+	testIds.skillLevels = [...results.map((r) => r.id)];
 
 	const password1 = await bcrypt.hash("password1", BCRYPT_WORK_FACTOR);
 	const password2 = await bcrypt.hash("password2", BCRYPT_WORK_FACTOR);
 
 	// Teachers
-	results = await db.query(
-		`
-    INSERT INTO teachers (id, name, email, password, description, is_admin)
-    VALUES (1, 'Teacher1', 'teacher1@example.com', $1, 'This is a description', TRUE),
-           (2, 'Teacher2', 'teacher2@example.com', $2, 'This is another description', FALSE)
-    RETURNING id`,
-		[password1, password2]
-	);
-	testIds.teachers = [...results.rows.map((r) => r.id)];
+	const teachers = [
+		{
+			id: adminId,
+			name: "Teacher1",
+			email: "teacher1@example.com",
+			password: password1,
+			description: "This is a description",
+			is_admin: true,
+		},
+		{
+			id: teacherId,
+			name: "Teacher2",
+			email: "teacher2@example.com",
+			password: password2,
+			description: "This is another description",
+			is_admin: false,
+		},
+	];
+	var results = await db("teachers").insert(teachers, "id");
+	testIds.teachers = [...results.map((r) => r.id)];
 
 	// Students
-	results = await db.query(`
-    INSERT INTO students (name, email, description, skill_level_id, teacher_id)
-    VALUES ('Student1', 'student1@example.com', 'This is a description', ${testIds.skillLevels[0]}, ${testIds.teachers[0]}),
-           ('Student2', 'student2@example.com', 'This is another description', ${testIds.skillLevels[1]}, ${testIds.teachers[0]}),
-           ('Student3', 'student3@example.com', 'This is yet another description', ${testIds.skillLevels[2]}, ${testIds.teachers[1]})
-    RETURNING id`);
-	testIds.students = [...results.rows.map((r) => r.id)];
+	const students = [
+		{
+			name: "Student1",
+			email: "student1@example.com",
+			description: "This is a description",
+			skill_level_id: testIds.skillLevels[0],
+			teacher_id: testIds.teachers[0],
+		},
+		{
+			name: "Student2",
+			email: "student2@example.com",
+			description: "This is another description",
+			skill_level_id: testIds.skillLevels[1],
+			teacher_id: testIds.teachers[0],
+		},
+		{
+			name: "Student3",
+			email: "student3@example.com",
+			description: "This is yet another description",
+			skill_level_id: testIds.skillLevels[2],
+			teacher_id: testIds.teachers[1],
+		},
+	];
+
+	var results = await db("students").insert(students, "id");
+	testIds.students = [...results.map((r) => r.id)];
 
 	// Techniques
-	results = await db.query(`
-    INSERT INTO techniques (tonic, mode, type, description, skill_level_id, teacher_id)
-    VALUES ('C', 'Ionian', 'Scale', 'This is a scale', ${testIds.skillLevels[0]}, ${testIds.teachers[0]}),
-           ('D', 'Dorian', 'Scale', 'This is another scale', ${testIds.skillLevels[1]}, ${testIds.teachers[1]})
-    RETURNING id`);
-	testIds.techniques = [...results.rows.map((r) => r.id)];
+	const techniques = [
+		{
+			tonic: "C",
+			mode: "Ionian",
+			type: "Scale",
+			description: "This is a scale",
+			skill_level_id: testIds.skillLevels[0],
+			teacher_id: testIds.teachers[0],
+		},
+		{
+			tonic: "D",
+			mode: "Dorian",
+			type: "Scale",
+			description: "This is another scale",
+			skill_level_id: testIds.skillLevels[1],
+			teacher_id: testIds.teachers[1],
+		},
+	];
+
+	var results = await db("techniques").insert(techniques, "id");
+	testIds.techniques = [...results.map((r) => r.id)];
 
 	// Repertoire
-	results = await db.query(`
-    INSERT INTO repertoire (name, composer, arranger, genre, sheet_music_url, description, skill_level_id, teacher_id)
-    VALUES ('Piece1', 'Composer1', 'Arranger1', 'Classical', 'https://example.com/sheetmusic1', 'This is a piece', ${testIds.skillLevels[0]}, ${testIds.teachers[0]}),
-           ('Piece2', 'Composer2', NULL, 'Pop', 'https://example.com/sheetmusic2', 'This is another piece', ${testIds.skillLevels[1]}, ${testIds.teachers[1]})
-    RETURNING id`);
-	testIds.repertoire = [...results.rows.map((r) => r.id)];
+	const repertoire = [
+		{
+			name: "Piece1",
+			composer: "Composer1",
+			arranger: "Arranger1",
+			genre: "Classical",
+			sheet_music_url: "https://example.com/sheetmusic1",
+			description: "This is a piece",
+			skill_level_id: testIds.skillLevels[0],
+			teacher_id: testIds.teachers[0],
+		},
+		{
+			name: "Piece2",
+			composer: "Composer2",
+			arranger: null,
+			genre: "Pop",
+			sheet_music_url: "https://example.com/sheetmusic2",
+			description: "This is another piece",
+			skill_level_id: testIds.skillLevels[1],
+			teacher_id: testIds.teachers[1],
+		},
+	];
 
-	// Student Techniques
-	results = await db.query(`
-    INSERT INTO student_techniques (student_id, technique_id, completed_at, reviewed_at, review_interval)
-    VALUES (${testIds.students[0]}, ${testIds.techniques[0]}, NULL, NOW(), '1 week'),
-           (${testIds.students[0]}, ${testIds.techniques[1]}, NOW(), NOW(), NULL),
-           (${testIds.students[1]}, ${testIds.techniques[1]}, NOW(), NOW(), '1 month')
-    RETURNING id`);
-	testIds.studentTechniques = [...results.rows.map((r) => r.id)];
+	var results = await db("repertoire").insert(repertoire, "id");
+	testIds.repertoire = [...results.map((r) => r.id)];
 
-	// Student Repertoire
-	results = await db.query(`
-    INSERT INTO student_repertoire (student_id, repertoire_id, completed_at, reviewed_at, review_interval)
-    VALUES (${testIds.students[0]}, ${testIds.repertoire[0]}, NULL, NOW(), '1 week'),
-           (${testIds.students[0]}, ${testIds.repertoire[1]}, NOW(), NOW(), NULL),
-           (${testIds.students[1]}, ${testIds.repertoire[1]}, NOW(), NOW(), '1 month')
-    RETURNING id`);
-	testIds.studentRepertoire = [...results.rows.map((r) => r.id)];
+	// // Student Techniques
+	// results = await db.query(`
+	// INSERT INTO student_techniques (student_id, technique_id, completed_at, reviewed_at, review_interval)
+	// VALUES (${testIds.students[0]}, ${testIds.techniques[0]}, NULL, NOW(), '1 week'),
+	//        (${testIds.students[0]}, ${testIds.techniques[1]}, NOW(), NOW(), NULL),
+	//        (${testIds.students[1]}, ${testIds.techniques[1]}, NOW(), NOW(), '1 month')
+	// RETURNING id`);
+	// testIds.studentTechniques = [...results.rows.map((r) => r.id)];
+
+	// // Student Repertoire
+	// results = await db.query(`
+	// INSERT INTO student_repertoire (student_id, repertoire_id, completed_at, reviewed_at, review_interval)
+	// VALUES (${testIds.students[0]}, ${testIds.repertoire[0]}, NULL, NOW(), '1 week'),
+	//        (${testIds.students[0]}, ${testIds.repertoire[1]}, NOW(), NOW(), NULL),
+	//        (${testIds.students[1]}, ${testIds.repertoire[1]}, NOW(), NOW(), '1 month')
+	// RETURNING id`);
+	// testIds.studentRepertoire = [...results.rows.map((r) => r.id)];
 
 	// Lessons
-	results = await db.query(`
-    INSERT INTO lessons (student_id, teacher_id, date, notes)
-    VALUES (${testIds.students[0]}, ${testIds.teachers[0]}, NOW(), 'This is a note'),
-           (${testIds.students[1]}, ${testIds.teachers[0]}, (NOW() - INTERVAL '32 days'), 'This is another note'),
-           (${testIds.students[2]}, ${testIds.teachers[1]}, NOW(), 'This is yet another note'),
-		   (${testIds.students[0]}, ${testIds.teachers[1]}, (NOW() - INTERVAL '32 days'), 'This is the last note')
-    RETURNING id`);
-	testIds.lessons = [...results.rows.map((r) => r.id)];
+	const lessons = [
+		{
+			student_id: testIds.students[0],
+			teacher_id: testIds.teachers[0],
+			date: new Date(),
+			notes: "This is a note",
+		},
+		{
+			student_id: testIds.students[1],
+			teacher_id: testIds.teachers[0],
+			date: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000),
+			notes: "This is another note",
+		},
+		{
+			student_id: testIds.students[2],
+			teacher_id: testIds.teachers[1],
+			date: new Date(),
+			notes: "This is yet another note",
+		},
+		{
+			student_id: testIds.students[0],
+			teacher_id: testIds.teachers[1],
+			date: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000),
+			notes: "This is the last note",
+		},
+	];
 
-	await db.query(`
-    INSERT INTO lesson_techniques (lesson_id, student_technique_id, rating, notes)
-    VALUES (${testIds.lessons[0]}, ${testIds.studentTechniques[0]}, 3, 'This is a note'),
-           (${testIds.lessons[1]}, ${testIds.studentTechniques[1]}, 2, 'This is another note')`);
-
-	await db.query(`
-    INSERT INTO lesson_repertoire (lesson_id, student_repertoire_id, completed, rating, notes)
-    VALUES (${testIds.lessons[0]}, ${testIds.studentRepertoire[0]}, false, 1, 'This is a note'),
-            (${testIds.lessons[1]}, ${testIds.studentRepertoire[1]}, true, 3, 'This is another note')`);
-}
-
-async function commonBeforeEach() {
-	await db.query("BEGIN");
-}
-
-async function commonAfterEach() {
-	await db.query("ROLLBACK");
+	var results = await db("lessons").insert(lessons, "id");
+	testIds.lessons = [...results.map((r) => r.id)];
 }
 
 async function commonAfterAll() {
-	await db.end();
+	await db.destroy();
 }
-
-const adminToken = createToken({
-	id: "1",
-	isAdmin: true,
-});
-const teacherToken = createToken({
-	id: "2",
-	isAdmin: false,
-});
-
-const adminId = "1";
-const teacherId = "2";
 
 module.exports = {
 	testIds,
@@ -136,8 +198,6 @@ module.exports = {
 	teacherToken,
 	adminId,
 	teacherId,
-	commonBeforeAll,
-	commonAfterAll,
 	commonBeforeEach,
-	commonAfterEach,
+	commonAfterAll,
 };

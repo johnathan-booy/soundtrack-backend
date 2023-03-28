@@ -1,20 +1,18 @@
-const db = require("../db");
+const db = require("../db/db");
 const Technique = require("../models/technique");
 const { NotFoundError, BadRequestError } = require("../expressError");
+const { v4: uuid } = require("uuid");
 
 const {
-	commonBeforeAll,
 	commonAfterAll,
 	commonBeforeEach,
-	commonAfterEach,
 	testIds,
 	adminId,
 } = require("../_testCommon");
+const { techniqueCols } = require("./_columns");
 
-beforeAll(commonBeforeAll);
 afterAll(commonAfterAll);
 beforeEach(commonBeforeEach);
-afterEach(commonAfterEach);
 
 describe("getAll", function () {
 	test("works", async function () {
@@ -94,15 +92,13 @@ describe("create", function () {
 			teacherId: adminId,
 		});
 
-		const result = await db.query(
-			`SELECT id, tonic, mode, type, description, date_added AS "dateAdded", skill_level_id AS "skillLevelId", teacher_id AS "teacherId"
-       FROM techniques
-       WHERE id = ${technique.id}`
-		);
-		expect(result.rows[0].tonic).toEqual("E");
-		expect(result.rows[0].mode).toEqual("Phrygian");
-		expect(result.rows[0].type).toEqual("Scale");
-		expect(result.rows[0].description).toEqual("This is a new scale");
+		const [found] = await db("techniques")
+			.select(techniqueCols)
+			.where({ id: technique.id });
+		expect(found.tonic).toEqual("E");
+		expect(found.mode).toEqual("Phrygian");
+		expect(found.type).toEqual("Scale");
+		expect(found.description).toEqual("This is a new scale");
 	});
 
 	test("bad request with duplicate", async function () {
@@ -177,7 +173,7 @@ describe("update", () => {
 	it("throws BadRequestError if teacher id is invalid", async () => {
 		try {
 			const resp = await Technique.update(testIds.techniques[0], {
-				teacherId: -1, // Invalid teacher id
+				teacherId: uuid(), // Invalid teacher id
 			});
 			console.log(resp);
 			fail();
@@ -201,10 +197,10 @@ describe("update", () => {
 describe("delete", function () {
 	test("works", async function () {
 		await Technique.delete(testIds.techniques[0]);
-		const res = await db.query("SELECT id FROM techniques WHERE id=$1", [
-			testIds.techniques[0],
-		]);
-		expect(res.rows.length).toEqual(0);
+		const rows = await db("techniques")
+			.select("id")
+			.where({ id: testIds.techniques[0] });
+		expect(rows.length).toEqual(0);
 	});
 
 	test("not found if no such technique", async function () {

@@ -1,21 +1,17 @@
-const db = require("../db");
+const db = require("../db/db");
 const Repertoire = require("../models/repertoire");
 const { NotFoundError, BadRequestError } = require("../expressError");
 
 const {
-	commonBeforeAll,
 	commonAfterAll,
 	commonBeforeEach,
-	commonAfterEach,
 	testIds,
 	adminId,
 	teacherId,
 } = require("../_testCommon");
 
-beforeAll(commonBeforeAll);
 afterAll(commonAfterAll);
 beforeEach(commonBeforeEach);
-afterEach(commonAfterEach);
 
 describe("getAll", function () {
 	test("works", async function () {
@@ -105,19 +101,16 @@ describe("create", function () {
 			teacherId: adminId,
 		});
 
-		const result = await db.query(
-			`SELECT id, name, composer, arranger, genre, sheet_music_url AS "sheetMusicUrl", description, date_added AS "dateAdded", skill_level_id AS "skillLevelId", teacher_id AS "teacherId"
-       FROM repertoire
-       WHERE id = ${repertoire.id}`
-		);
-		expect(result.rows[0].name).toEqual("New Piece");
-		expect(result.rows[0].composer).toEqual("Composer3");
-		expect(result.rows[0].arranger).toEqual(null);
-		expect(result.rows[0].genre).toEqual("Rock");
-		expect(result.rows[0].sheetMusicUrl).toEqual(
-			"https://example.com/new-piece"
-		);
-		expect(result.rows[0].description).toEqual("This is a new piece");
+		const [found] = await db("repertoire")
+			.select("*")
+			.where({ id: repertoire.id });
+
+		expect(found.name).toEqual("New Piece");
+		expect(found.composer).toEqual("Composer3");
+		expect(found.arranger).toEqual(null);
+		expect(found.genre).toEqual("Rock");
+		expect(found.sheet_music_url).toEqual("https://example.com/new-piece");
+		expect(found.description).toEqual("This is a new piece");
 	});
 
 	test("bad request with duplicate", async function () {
@@ -158,10 +151,10 @@ describe("create", function () {
 describe("delete", function () {
 	test("works", async function () {
 		await Repertoire.delete(testIds.repertoire[0]);
-		const res = await db.query("SELECT id FROM repertoire WHERE id=$1", [
-			testIds.repertoire[0],
-		]);
-		expect(res.rows.length).toEqual(0);
+		const rows = await db("repertoire")
+			.select("*")
+			.where({ id: testIds.repertoire[0] });
+		expect(rows.length).toEqual(0);
 	});
 
 	test("not found if no such repertoire", async function () {
@@ -204,26 +197,20 @@ describe("update", function () {
 			teacherId: teacherId,
 		});
 
-		const result = await db.query(
-			`SELECT id, name, composer, arranger, genre, sheet_music_url AS "sheetMusicUrl", description, date_added AS "dateAdded", skill_level_id AS "skillLevelId", teacher_id AS "teacherId"
-             FROM repertoire
-             WHERE id = $1`,
-			[testIds.repertoire[0]]
+		const [found] = await db("repertoire")
+			.select("*")
+			.where({ id: testIds.repertoire[0] });
+
+		expect(found.name).toEqual("Updated Piece1");
+		expect(found.composer).toEqual("Updated Composer1");
+		expect(found.arranger).toEqual("Updated Arranger1");
+		expect(found.genre).toEqual("Pop");
+		expect(found.sheet_music_url).toEqual(
+			"https://example.com/updated_sheetmusic1"
 		);
-		expect(result.rows).toEqual([
-			{
-				id: testIds.repertoire[0],
-				name: "Updated Piece1",
-				composer: "Updated Composer1",
-				arranger: "Updated Arranger1",
-				genre: "Pop",
-				sheetMusicUrl: "https://example.com/updated_sheetmusic1",
-				description: "This is an updated piece",
-				dateAdded: expect.any(Date),
-				skillLevelId: testIds.skillLevels[1],
-				teacherId: teacherId,
-			},
-		]);
+		expect(found.description).toEqual("This is an updated piece");
+		expect(found.skill_level_id).toEqual(testIds.skillLevels[1]);
+		expect(found.teacher_id).toEqual(teacherId);
 	});
 
 	test("not found if no such repertoire", async function () {

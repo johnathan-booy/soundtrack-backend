@@ -1,11 +1,18 @@
 "use strict";
 
 const { BCRYPT_WORK_FACTOR } = require("../config");
-const db = require("../db");
+const db = require("../db/db");
 const bcrypt = require("bcrypt");
 const { UnauthorizedError, NotFoundError } = require("../expressError");
-const { sqlForPartialUpdate } = require("../helpers/sqlForPartialUpdate");
 const handlePostgresError = require("../helpers/handlePostgresError");
+const snakeCaseKeys = require("snakecase-keys");
+const {
+	teacherCols,
+	repertoireCols,
+	techniqueCols,
+	repertoireMinCols,
+	techniqueMinCols,
+} = require("./_columns");
 
 /** Functions for teachers */
 class Teacher {
@@ -22,19 +29,11 @@ class Teacher {
 
 	static async authenticate(email, password) {
 		// Find the email in the database
-		const result = await db.query(
-			`
-            SELECT 
-                id, email, password, name, description, is_admin AS "isAdmin"
-            FROM
-                teachers
-            WHERE
-                email = $1`,
-			[email]
-		);
 
-		// Get the teacher object from response
-		const teacher = result.rows[0];
+		const [teacher] = await db
+			.select([...teacherCols, "password"])
+			.from("teachers")
+			.where({ email });
 
 		// If the teacher exists, compare the param password with the hashed password
 		if (teacher) {
@@ -70,15 +69,13 @@ class Teacher {
 		try {
 			const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
 
-			const results = await db.query(
-				`INSERT INTO teachers
-            				(email, password, name, description, is_admin)
-            	VALUES 		($1, $2, $3, $4, $5)
-            	RETURNING 	id, email, name, description, is_admin AS "isAdmin"`,
-				[email, hashedPassword, name, description, isAdmin]
-			);
-
-			const teacher = results.rows[0];
+			const [teacher] = await db("teachers").returning(teacherCols).insert({
+				email,
+				password: hashedPassword,
+				name,
+				description,
+				is_admin: isAdmin,
+			});
 
 			return teacher;
 		} catch (err) {
@@ -91,13 +88,9 @@ class Teacher {
 	 * @returns {Array} [{id, name, email, description, isAdmin}]
 	 */
 	static async getAll() {
-		const results = await db.query(`
-			SELECT	id, name, email, description, is_admin AS "isAdmin"
-			FROM	teachers
-			ORDER BY date_added
-		`);
+		const results = await db.select(teacherCols).from("teachers");
 
-		return results.rows;
+		return results;
 	}
 
 	/** Get teacher by id
@@ -105,19 +98,16 @@ class Teacher {
 	 * 	@returns {Array} [{id, name, email, description, isAdmin}]
 	 */
 	static async get(id) {
-		const results = await db.query(
-			`
-			SELECT	id, name, email, description, is_admin AS "isAdmin"
-			FROM	teachers
-			WHERE	id = $1`,
-			[id]
-		);
-
-		const teacher = results.rows[0];
-
-		if (!teacher) throw new NotFoundError(`No teacher found with id: ${id}`);
-
-		return teacher;
+		try {
+			const [teacher] = await db
+				.select(teacherCols)
+				.from("teachers")
+				.where({ id });
+			if (!teacher) throw new Error();
+			return teacher;
+		} catch (err) {
+			throw new NotFoundError(`No teacher found with id: ${id}`);
+		}
 	}
 
 	/**
@@ -142,24 +132,12 @@ class Teacher {
 				data.password = await bcrypt.hash(data.password, BCRYPT_WORK_FACTOR);
 			}
 
-			const { setCols, values } = sqlForPartialUpdate(data, {
-				isAdmin: "is_admin",
-			});
-			const idVarIdx = values.length + 1;
+			const snakeCaseData = snakeCaseKeys(data, { deep: true });
 
-			const querySql = `
-						UPDATE teachers
-						SET ${setCols}
-						WHERE id = $${idVarIdx}
-						RETURNING
-							id,
-							name,
-							email,
-							description,
-							is_admin AS "isAdmin"`;
-
-			const result = await db.query(querySql, [...values, id]);
-			const teacher = result.rows[0];
+			const [teacher] = await db("teachers")
+				.where({ id })
+				.update(snakeCaseData)
+				.returning(teacherCols);
 
 			if (!teacher) throw new NotFoundError(`No teacher found with id: ${id}`);
 
@@ -170,72 +148,49 @@ class Teacher {
 		}
 	}
 
-	/** Delete given teacher from database; returns undefined
-	 *	@param {String} id teacher identifier
+	/**
+	 * Delete given teacher from database; returns undefined
+	 * @param {String} id teacher identifier
 	 */
 	static async delete(id) {
-		const results = await db.query(
-			`
-			DELETE FROM
-				teachers
-			WHERE
-				id = $1
-			RETURNING
-				name
-		`,
-			[id]
-		);
-
-		const teacher = results.rows[0];
-
-		if (!teacher) throw new NotFoundError(`No teacher found with id: ${id}`);
+		try {
+			const [teacher] = await db("teachers").where("id", id).del(["name"]);
+			if (!teacher) throw new Error();
+		} catch (err) {
+			throw new NotFoundError(`No teacher found with id: ${id}`);
+		}
 	}
 
-	/** Get all lessons conducted by a teacher
+	/**
+	 * Get all lessons conducted by a teacher
 	 *
 	 * @param {string} id - teacher identifier
 	 * @param {Object} searchFilters - All optional - {daysAgo: 30}
 	 *
 	 * @returns {Array} [{id, studentName, date}]
-	 *
 	 */
 	static async getLessons(id, searchFilters = { daysAgo: 30 }) {
 		// Check that the teacher exists
 		await Teacher.get(id);
 
-		let query = `
-					SELECT
-						l.id, s.name AS "studentName", l.date
-					FROM
-						lessons l
-					JOIN
-						students s
-					ON
-						s.id = l.student_id
-					`;
-		let whereExpressions = [];
-		let queryValues = [];
-
 		const { daysAgo } = searchFilters;
 
-		// Add each search time that was provided to the whereExpressions and queryValues
-		if (daysAgo) {
-			whereExpressions.push(`l.date > NOW() - INTERVAL '${daysAgo} days'`);
-		}
+		const results = await db("lessons")
+			.select("lessons.id", "students.name AS studentName", "lessons.date")
+			.join("students", "students.id", "lessons.student_id")
+			.where("lessons.teacher_id", id)
+			.modify((qb) => {
+				if (daysAgo) {
+					qb.where(
+						"lessons.date",
+						">",
+						db.raw(`NOW() - INTERVAL '${daysAgo} days'`)
+					);
+				}
+			})
+			.orderBy("lessons.date", "desc");
 
-		// We also need to query by teacher
-		queryValues.push(id);
-		whereExpressions.push(`l.teacher_id = $${queryValues.length}`);
-
-		// Assemble the query
-		if (whereExpressions.length > 0) {
-			query += " WHERE " + whereExpressions.join(" AND ");
-		}
-
-		query += " ORDER BY date DESC";
-		const results = await db.query(query, queryValues);
-
-		return results.rows;
+		return results;
 	}
 
 	/** Get all techniques that were created by a teacher
@@ -249,19 +204,11 @@ class Teacher {
 		// Check that the teacher exists
 		await Teacher.get(id);
 
-		const results = await db.query(
-			`
-			SELECT
-				id, tonic, mode, type, description, date_added AS "dateAdded", skill_level_id AS "skillLevelId"
-			FROM
-				techniques
-			WHERE
-				teacher_id = $1
-			`,
-			[id]
-		);
+		const techniques = await db("techniques")
+			.select(techniqueMinCols)
+			.where({ teacher_id: id });
 
-		return results.rows;
+		return techniques;
 	}
 
 	/** Get all techniques that were created by a teacher
@@ -275,21 +222,11 @@ class Teacher {
 		// Check that the teacher exists
 		await Teacher.get(id);
 
-		const results = await db.query(
-			`
-			SELECT
-				id, name, composer, arranger, genre, 
-				sheet_music_url AS "sheetMusicUrl", description, 
-				date_added AS "dateAdded", skill_level_id AS "skillLevelId"
-			FROM
-				repertoire
-			WHERE
-				teacher_id = $1
-			`,
-			[id]
-		);
+		const repertoire = db("repertoire")
+			.select(repertoireMinCols)
+			.where({ teacher_id: id });
 
-		return results.rows;
+		return repertoire;
 	}
 }
 
