@@ -5,6 +5,7 @@ const {
 	commonAfterAll,
 	commonBeforeEach,
 	adminId,
+	teacherId,
 } = require("../_testCommon");
 const Student = require("./student");
 const { studentCols } = require("./_columns");
@@ -158,7 +159,10 @@ describe("getAll", () => {
 
 describe("get", () => {
 	it("works", async () => {
-		const student = await Student.get(testIds.students[0]);
+		const student = await Student.get({
+			studentId: testIds.students[0],
+			teacherId: testIds.teachers[0],
+		});
 		expect(student).toEqual({
 			id: testIds.students[0],
 			name: "Student1",
@@ -171,7 +175,7 @@ describe("get", () => {
 
 	it("throws NotFoundError if student id not found", async () => {
 		try {
-			await Student.get(-1); // Nonexistent student id
+			await Student.get({ studentId: -1, teacherId: adminId }); // Nonexistent student id
 			fail();
 		} catch (err) {
 			expect(err instanceof NotFoundError).toBeTruthy();
@@ -188,38 +192,50 @@ describe("update", () => {
 	};
 
 	it("works", async () => {
-		const student = await Student.update(testIds.students[0], updateData);
+		const student = await Student.update({
+			studentId: testIds.students[2],
+			teacherId: teacherId,
+			data: updateData,
+		});
 		expect(student).toEqual({
-			id: testIds.students[0],
-			skillLevelId: testIds.skillLevels[0],
+			id: testIds.students[2],
+			skillLevelId: testIds.skillLevels[2],
 			...updateData,
 		});
 	});
 
 	it("throws NotFoundError if student id not found", async () => {
 		try {
-			await Student.update(-1, updateData); // Nonexistent student id
+			await Student.update({
+				studentId: -1,
+				teacherId: adminId,
+				data: updateData,
+			}); // Nonexistent student id
 			fail();
 		} catch (err) {
 			expect(err instanceof NotFoundError).toBeTruthy();
 		}
 	});
 
-	it("throws BadRequestError if teacher id is invalid", async () => {
+	it("throws NotFoundError if teacher id is invalid", async () => {
 		try {
-			await Student.update(testIds.students[0], {
-				teacherId: uuid(), // Invalid teacher id
+			await Student.update({
+				studentId: testIds.students[2],
+				teacherId: uuid(),
+				data: updateData,
 			});
 			fail();
 		} catch (err) {
-			expect(err instanceof BadRequestError).toBeTruthy();
+			expect(err instanceof NotFoundError).toBeTruthy();
 		}
 	});
 
 	it("throws BadRequestError if skill level id is invalid", async () => {
 		try {
-			await Student.update(testIds.students[0], {
-				skillLevelId: -1, // Invalid skill level id
+			await Student.update({
+				studentId: testIds.students[2],
+				teacherId: teacherId,
+				data: { skillLevelId: -1 },
 			});
 			fail();
 		} catch (err) {
@@ -229,8 +245,10 @@ describe("update", () => {
 
 	it("throws BadRequestError if email already exists", async () => {
 		try {
-			await Student.update(testIds.students[0], {
-				email: "student2@example.com", // Duplicate email
+			await Student.update({
+				studentId: testIds.students[0],
+				isAdmin: true,
+				data: { email: "student2@example.com" }, // Duplicate email
 			});
 			fail();
 		} catch (err) {
@@ -276,22 +294,32 @@ describe("getLessons", () => {
 	};
 
 	it("works: defaults to last 30 days", async () => {
-		const results = await Student.getLessons(testIds.students[0]);
+		const results = await Student.getLessons({
+			studentId: testIds.students[0],
+			teacherId: adminId,
+		});
 		expect(results.lessons).toEqual([lessonNow]);
 		expect(results.student.id).toEqual(testIds.students[0]);
 		expect(results.student.teacherId).toEqual(adminId);
 	});
 
 	it("filters by daysAgo", async () => {
-		const results = await Student.getLessons(testIds.students[0], {
-			daysAgo: 60,
+		const results = await Student.getLessons({
+			studentId: testIds.students[0],
+			teacherId: adminId,
+			searchFilters: {
+				daysAgo: 60,
+			},
 		});
 		expect(results.lessons).toEqual([lessonNow, lessonPast]);
 	});
 
 	it("throws NotFoundError if student not found", async () => {
 		try {
-			await Student.getLessons(-1); // Nonexistent student id
+			await Student.getLessons({
+				studentId: -1,
+				teacherId: adminId,
+			});
 			fail();
 		} catch (err) {
 			expect(err instanceof NotFoundError).toBeTruthy();

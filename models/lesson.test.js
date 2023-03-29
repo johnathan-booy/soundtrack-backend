@@ -1,5 +1,11 @@
 const Lesson = require("./lesson");
-const { commonBeforeEach, commonAfterAll, testIds } = require("../_testCommon");
+const {
+	commonBeforeEach,
+	commonAfterAll,
+	testIds,
+	adminId,
+	teacherId,
+} = require("../_testCommon");
 const { NotFoundError, BadRequestError } = require("../expressError");
 const db = require("../db/db");
 const { v4: uuid } = require("uuid");
@@ -10,7 +16,10 @@ afterAll(commonAfterAll);
 describe("Lesson", () => {
 	describe("get", () => {
 		test("retrieves a lesson by id", async () => {
-			const lesson = await Lesson.get(testIds.lessons[0]);
+			const lesson = await Lesson.get({
+				lessonId: testIds.lessons[0],
+				teacherId: adminId,
+			});
 			expect(lesson).toEqual({
 				id: testIds.lessons[0],
 				date: expect.any(Date),
@@ -24,7 +33,10 @@ describe("Lesson", () => {
 
 		test("throws NotFoundError if lesson not found", async () => {
 			try {
-				await Lesson.get(-1); // Nonexistent lesson id
+				await Lesson.get({
+					lessonId: -1,
+					teacherId: adminId,
+				});
 				fail();
 			} catch (err) {
 				expect(err instanceof NotFoundError).toBeTruthy();
@@ -83,8 +95,12 @@ describe("Lesson", () => {
 
 	describe("update", () => {
 		test("updates a lesson's notes", async () => {
-			const res = await Lesson.update(testIds.lessons[0], {
-				notes: "Updated notes",
+			const res = await Lesson.update({
+				lessonId: testIds.lessons[0],
+				teacherId: adminId,
+				data: {
+					notes: "Updated notes",
+				},
 			});
 
 			expect(res).toEqual({
@@ -95,13 +111,20 @@ describe("Lesson", () => {
 				teacherId: testIds.teachers[0],
 			});
 
-			const updatedLesson = await Lesson.get(testIds.lessons[0]);
+			const updatedLesson = await Lesson.get({
+				lessonId: testIds.lessons[0],
+				teacherId: adminId,
+			});
 			expect(updatedLesson.notes).toBe("Updated notes");
 		});
 
 		test("updates a lesson's date", async () => {
 			const date = new Date();
-			const res = await Lesson.update(testIds.lessons[0], { date });
+			const res = await Lesson.update({
+				lessonId: testIds.lessons[0],
+				teacherId: adminId,
+				data: { date },
+			});
 
 			expect(res).toEqual({
 				id: testIds.lessons[0],
@@ -111,13 +134,20 @@ describe("Lesson", () => {
 				teacherId: testIds.teachers[0],
 			});
 
-			const updatedLesson = await Lesson.get(testIds.lessons[0]);
+			const updatedLesson = await Lesson.get({
+				lessonId: testIds.lessons[0],
+				teacherId: adminId,
+			});
 			expect(updatedLesson.date).toEqual(date);
 		});
 
 		test("updates a lesson's student", async () => {
-			const res = await Lesson.update(testIds.lessons[0], {
-				studentId: testIds.students[1],
+			const res = await Lesson.update({
+				lessonId: testIds.lessons[0],
+				teacherId: adminId,
+				data: {
+					studentId: testIds.students[1],
+				},
 			});
 
 			expect(res).toEqual({
@@ -128,13 +158,20 @@ describe("Lesson", () => {
 				teacherId: testIds.teachers[0],
 			});
 
-			const updatedLesson = await Lesson.get(testIds.lessons[0]);
+			const updatedLesson = await Lesson.get({
+				lessonId: testIds.lessons[0],
+				teacherId: adminId,
+			});
 			expect(updatedLesson.studentId).toBe(testIds.students[1]);
 		});
 
 		test("updates a lesson's teacher", async () => {
-			const res = await Lesson.update(testIds.lessons[0], {
-				teacherId: testIds.teachers[1],
+			const res = await Lesson.update({
+				lessonId: testIds.lessons[0],
+				teacherId: adminId,
+				data: {
+					teacherId: testIds.teachers[1],
+				},
 			});
 
 			expect(res).toEqual({
@@ -145,31 +182,47 @@ describe("Lesson", () => {
 				teacherId: testIds.teachers[1],
 			});
 
-			const updatedLesson = await Lesson.get(testIds.lessons[0]);
+			const updatedLesson = await Lesson.get({
+				lessonId: testIds.lessons[0],
+				teacherId: teacherId,
+			});
+
 			expect(updatedLesson.teacherId).toBe(testIds.teachers[1]);
 		});
 
 		test("throws NotFoundError if lesson not found", async () => {
 			try {
-				await Lesson.update(-1, { notes: "updated" }); // Nonexistent lesson id
+				await Lesson.update({
+					lessonId: -1,
+					teacherId: adminId,
+					data: { notes: "updated" },
+				}); // Nonexistent lesson id
 				fail();
 			} catch (err) {
 				expect(err instanceof NotFoundError).toBeTruthy();
 			}
 		});
 
-		test("throws BadRequestError with invalid teacherId", async () => {
+		test("throws NotFoundError with invalid teacherId", async () => {
 			try {
-				await Lesson.update(testIds.lessons[0], { teacherId: uuid() });
+				await Lesson.update({
+					lessonId: testIds.lessons[0],
+					teacherId: uuid(),
+					data: { notes: "updated" },
+				}); // Nonexistent lesson id
 				fail();
 			} catch (err) {
-				expect(err instanceof BadRequestError).toBeTruthy();
+				expect(err instanceof NotFoundError).toBeTruthy();
 			}
 		});
 
 		test("throws BadRequestError with invalid studentId", async () => {
 			try {
-				await Lesson.update(testIds.lessons[0], { studentId: -1 });
+				await Lesson.update({
+					lessonId: testIds.lessons[0],
+					teacherId: adminId,
+					data: { studentId: -1 },
+				});
 				fail();
 			} catch (err) {
 				expect(err instanceof BadRequestError).toBeTruthy();

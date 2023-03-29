@@ -143,7 +143,7 @@ describe("PATCH /lessons/:id", () => {
 		expect(resp.statusCode).toEqual(400);
 	});
 
-	it("returns unauthorized for different teacher than id", async () => {
+	it("returns not found for different teacher than id", async () => {
 		const data = {
 			studentId: testIds.students[1],
 			teacherId: teacherId,
@@ -154,7 +154,7 @@ describe("PATCH /lessons/:id", () => {
 			.set("Authorization", `Bearer ${teacherToken}`)
 			.send(data);
 
-		expect(resp.statusCode).toEqual(401);
+		expect(resp.statusCode).toEqual(404);
 	});
 });
 
@@ -181,11 +181,11 @@ describe("DELETE /lessons/:id", () => {
 		});
 	});
 
-	it("returns unauthorized for different teacher than id", async () => {
+	it("returns not found for different teacher than id", async () => {
 		const resp = await request(app)
 			.delete(`/lessons/${testIds.lessons[0]}`)
 			.set("Authorization", `Bearer ${teacherToken}`);
 
-		expect(resp.statusCode).toEqual(401);
+		expect(resp.statusCode).toEqual(404);
 	});
 });

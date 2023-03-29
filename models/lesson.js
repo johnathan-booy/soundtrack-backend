@@ -15,8 +15,8 @@ class Lesson {
 	 * @returns {object} containing `id`, `date`, `notes`, `studentId`, `studentName`, `teacherId`, `teacherName`
 	 * @throws {NotFoundError} If no lesson is found with the given id.
 	 */
-	static async get(id) {
-		const lesson = await db("lessons as l")
+	static async get({ lessonId, teacherId, isAdmin = false }) {
+		const [lesson] = await db("lessons as l")
 			.select(
 				"l.id",
 				"l.date",
@@ -28,10 +28,15 @@ class Lesson {
 			)
 			.join("students as s", "s.id", "l.student_id")
 			.join("teachers as t", "t.id", "l.teacher_id")
-			.where("l.id", id)
-			.first();
+			.where("l.id", lessonId)
+			.modify((qb) => {
+				if (!isAdmin) {
+					qb.where("l.teacher_id", teacherId);
+				}
+			});
 
-		if (!lesson) throw new NotFoundError(`No lesson found with id: ${id}`);
+		if (!lesson)
+			throw new NotFoundError(`No lesson found with id: ${lessonId}`);
 
 		return lesson;
 	}
@@ -63,7 +68,9 @@ class Lesson {
 	 * This is a "partial update" --- it's fine if `data` doesn't contain
 	 * all the fields; this only changes provided ones.
 	 *
-	 * @param {number} id - lesson identifier
+	 * @param {number} lessonId
+	 * @param {string} teacherId
+	 * @param {boolean} isAdmin
 	 * @param {object} data - can include `{ date, notes, studentId, teacherId }`
 	 *
 	 * @returns {object} `{id, date, notes, studentId, teacherId}
@@ -71,15 +78,22 @@ class Lesson {
 	 * @throws {NotFoundError} if `id` is invalid
 	 * @throws {BadRequestError} If the `teacherId` or `studentId` does not exist in the database
 	 */
-	static async update(id, data) {
+	static async update({ lessonId, teacherId, isAdmin = false, data }) {
 		try {
 			const snakeCaseData = snakecaseKeys(data, { deep: true });
-			const [lesson] = await db("lessons")
-				.where({ id })
-				.update(snakeCaseData)
-				.returning(lessonCols);
 
-			if (!lesson) throw new NotFoundError(`No lesson found with id: ${id}`);
+			const [lesson] = await db("lessons")
+				.where({ id: lessonId })
+				.update(snakeCaseData)
+				.returning(lessonCols)
+				.modify((qb) => {
+					if (!isAdmin) {
+						qb.where("teacher_id", teacherId);
+					}
+				});
+
+			if (!lesson)
+				throw new NotFoundError(`No lesson found with id: ${lessonId}`);
 
 			return lesson;
 		} catch (err) {

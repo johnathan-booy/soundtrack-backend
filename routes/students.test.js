@@ -182,12 +182,12 @@ describe("GET /students/:id", () => {
 		});
 	});
 
-	it("returns unauthorized for different teacher than teacherId", async () => {
+	it("returns not found for different teacher than teacherId", async () => {
 		const resp = await request(app)
-			.get(`/students/${testIds.students[0]}`)
+			.get(`/students/${testIds.students[1]}`)
 			.set("Authorization", `Bearer ${teacherToken}`);
 
-		expect(resp.statusCode).toEqual(401);
+		expect(resp.statusCode).toEqual(404);
 	});
 });
 
@@ -345,7 +345,7 @@ describe("PATCH /students/:id", () => {
 		expect(resp.statusCode).toEqual(400);
 	});
 
-	it("returns unauthorized for different teacher than id", async () => {
+	it("returns not found for different teacher than id", async () => {
 		const data = {
 			email: "test@test.com",
 		};
@@ -354,7 +354,7 @@ describe("PATCH /students/:id", () => {
 			.set("Authorization", `Bearer ${teacherToken}`)
 			.send(data);
 
-		expect(resp.statusCode).toEqual(401);
+		expect(resp.statusCode).toEqual(404);
 	});
 });
 
@@ -381,12 +381,12 @@ describe("DELETE /students/:id", () => {
 		});
 	});
 
-	it("returns unauthorized for different teacher than id", async () => {
+	it("returns not found for different teacher than id", async () => {
 		const resp = await request(app)
 			.delete(`/students/${testIds.students[0]}`)
 			.set("Authorization", `Bearer ${teacherToken}`);
 
-		expect(resp.statusCode).toEqual(401);
+		expect(resp.statusCode).toEqual(404);
 	});
 });
 
@@ -448,11 +448,11 @@ describe("GET /students/:id/lessons", () => {
 		});
 	});
 
-	it("returns unauthorized for different teacher than teacherId", async () => {
+	it("returns not found for different teacher than teacherId", async () => {
 		const resp = await request(app)
 			.get(`/students/${testIds.students[0]}/lessons`)
 			.set("Authorization", `Bearer ${teacherToken}`);
 
-		expect(resp.statusCode).toEqual(401);
+		expect(resp.statusCode).toEqual(404);
 	});
 });

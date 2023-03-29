@@ -50,29 +50,16 @@ router.patch("/:id", loggedIn, async function (req, res, next) {
 	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
-		// Validate the data
+		const { id: lessonId } = req.params;
+		const { id: teacherId, isAdmin } = res.locals.teacher;
 		const validatedBody = await lessonUpdateSchema.validate(req.body);
 
-		// Check that the lesson exists
-		const lesson = await Lesson.get(req.params.id);
-
-		// Ensure that:
-		// the teacher is admin OR matches teacherId in original lesson
-		const teacher = res.locals.teacher;
-		if (!teacher.isAdmin && teacher.id !== lesson.teacherId) {
-			throw new UnauthorizedError();
-		}
-
-		// Also make sure that non-admin teachers cannot change the teacherId
-		if (
-			!teacher.isAdmin &&
-			validatedBody.teacherId &&
-			validatedBody.teacherId !== teacher.id
-		) {
-			throw new UnauthorizedError();
-		}
-
-		const updatedLesson = await Lesson.update(req.params.id, validatedBody);
+		const updatedLesson = await Lesson.update({
+			lessonId,
+			teacherId,
+			isAdmin,
+			data: validatedBody,
+		});
 
 		return res.json({ lesson: updatedLesson });
 	} catch (err) {
@@ -94,13 +81,12 @@ router.delete("/:id", loggedIn, async function (req, res, next) {
 	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
-		const lesson = await Lesson.get(req.params.id);
-		const teacher = res.locals.teacher;
-		if (!teacher.isAdmin && teacher.id !== lesson.teacherId) {
-			throw new UnauthorizedError();
-		}
+		const { id: lessonId } = req.params;
+		const { id: teacherId, isAdmin } = res.locals.teacher;
+		await Lesson.get({ lessonId, teacherId, isAdmin });
+
 		await Lesson.delete(req.params.id);
-		return res.json({ deleted: +req.params.id });
+		return res.json({ deleted: +lessonId });
 	} catch (err) {
 		return next(err);
 	}

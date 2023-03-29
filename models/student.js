@@ -60,7 +60,7 @@ class Student {
 			.select(studentMinCols)
 			.modify((qb) => {
 				if (teacherId) {
-					qb.where("teacher_id", teacherId);
+					qb.where({ teacher_id: teacherId });
 				}
 				if (name) {
 					qb.where("name", "ilike", `%${name}%`);
@@ -77,14 +77,25 @@ class Student {
 	/**
 	 * Get student by id
 	 *
-	 * @param {String} id - student identifier
+	 * @param {number} studentId
+	 * @param {string} teacherId
+	 * @param {boolean} isAdmin
+	 *
 	 * @returns {Object} containing the student's `id`, `name`, `email`, `description`, `skillLevelId`, and `teacherId`.
-	 * @throws {NotFoundError} If no student is found with the given id.
+	 * @throws {NotFoundError} if `studentId` or `teacherId` or the combination thereof is invalid
 	 */
-	static async get(id) {
-		const [student] = await db("students").select(studentCols).where({ id });
+	static async get({ studentId, teacherId, isAdmin = false }) {
+		const [student] = await db("students")
+			.select(studentCols)
+			.where({ id: studentId })
+			.modify((qb) => {
+				if (!isAdmin) {
+					qb.where({ teacher_id: teacherId });
+				}
+			});
 
-		if (!student) throw new NotFoundError(`No student found with id: ${id}`);
+		if (!student)
+			throw new NotFoundError(`No student found with id: ${studentId}`);
 
 		return student;
 	}
@@ -95,27 +106,35 @@ class Student {
 	 * This is a "partial update" --- it's fine if `data` doesn't contain
 	 * all the fields; this only changes provided ones.
 	 *
-	 * @param {Number} id - student identifier
-	 * @param {object} data - can include: { name, email, teacherId, description, skillLevelId }
+	 * @param {number} studentId
+	 * @param {string} teacherId
+	 * @param {boolean} isAdmin
+	 * @param {object} data - can include: { name, email, teacherId, description, skillLevelId }f
 	 *
 	 * @returns {object} - { id, email, name, teacherId, description, skillLevelId }
 	 *
-	 * @throws {NotFoundError} if `id` is invalid
-	 * @throws {BadRequestError} If the `teacherId` or `skillLevelId` does not exist in the database, or the email already exists
+	 * @throws {NotFoundError} if `studentId` or `teacherId` or the combination thereof is invalid
+	 * @throws {BadRequestError} If the `skillLevelId` does not exist in the database, or the email already exists
 
 	 * WARNING: this function can change the teacherId field of a student.
 	 * If the inputs aren't validated, a serious data integrity risk would be opened.
 	 */
-	static async update(id, data) {
+	static async update({ studentId, teacherId, isAdmin = false, data }) {
 		try {
 			const snakeCaseData = snakecaseKeys(data, { deep: true });
 
 			const [student] = await db("students")
-				.where({ id })
+				.where({ id: studentId })
 				.update(snakeCaseData)
-				.returning(studentCols);
+				.returning(studentCols)
+				.modify((qb) => {
+					if (!isAdmin) {
+						qb.where({ teacher_id: teacherId });
+					}
+				});
 
-			if (!student) throw new NotFoundError(`No student found with id: ${id}`);
+			if (!student)
+				throw new NotFoundError(`No student found with id: ${studentId}`);
 
 			return student;
 		} catch (err) {
@@ -136,21 +155,28 @@ class Student {
 	/**
 	 * Get all lessons taken by a student
 	 *
-	 * @param {Number} id - student identifier
+	 * @param {number} studentId
+	 * @param {string} teacherId
+	 * @param {boolean} isAdmin
 	 * @param {Object} searchFilters - All optional - {daysAgo: 30}
 	 *
 	 * @returns {Array} {student : {...studentObject}, lessons : [{id, date}]}
 	 *
 	 */
-	static async getLessons(id, searchFilters = { daysAgo: 30 }) {
+	static async getLessons({
+		studentId,
+		teacherId,
+		isAdmin = false,
+		searchFilters = { daysAgo: 30 },
+	}) {
 		// Check that the student exists
-		const student = await Student.get(id);
+		const student = await Student.get({ studentId, teacherId, isAdmin });
 
 		const { daysAgo } = searchFilters;
 
 		const lessons = await db("lessons")
 			.select(lessonMinCols)
-			.where("student_id", id)
+			.where("student_id", studentId)
 			.modify((qb) => {
 				if (daysAgo) {
 					qb.where(
@@ -175,7 +201,7 @@ class Student {
 	 */
 	static async getTechniques(id, searchFilters = {}) {
 		// Check that the teacher exists
-		await Student.get(id);
+		await Student.get({ studentId: id, isAdmin: true });
 
 		let query = `
 	   SELECT 	t.id, t.tonic, t.mode, t.type, st.completed_at IS NOT NULL as completed,
@@ -219,7 +245,7 @@ class Student {
 	 */
 	static async getRepertoire(id, searchFilters = {}) {
 		// Check that the student exists
-		await Student.get(id);
+		await Student.get({ studentId: id, isAdmin: true });
 
 		let query = `
 		SELECT 	r.id, r.name, r.composer, r.arranger, r.genre, r.sheet_music_url as "sheetMusicUrl",

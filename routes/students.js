@@ -30,8 +30,6 @@ router.get("/", correctTeacherOrAdmin, async function (req, res, next) {
 	// Get queries
 	const q = req.query;
 
-	const teacher = res.locals.teacher;
-
 	if (q.skillLevelId !== undefined) q.skillLevelId = +q.skillLevelId;
 
 	try {
@@ -58,12 +56,14 @@ router.get("/:id", loggedIn, async function (req, res, next) {
 	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
-		const student = await Student.get(req.params.id);
+		const { id: studentId } = req.params;
+		const { id: teacherId, isAdmin } = res.locals.teacher;
 
-		const teacher = res.locals.teacher;
-		if (!teacher.isAdmin && teacher.id !== student.teacherId) {
-			throw new UnauthorizedError();
-		}
+		const student = await Student.get({
+			studentId,
+			teacherId,
+			isAdmin,
+		});
 
 		return res.json({ student });
 	} catch (err) {
@@ -112,12 +112,17 @@ router.patch("/:id", loggedIn, async function (req, res, next) {
 	 */
 	try {
 		const validatedBody = await studentUpdateSchema.validate(req.body);
-		const student = await Student.update(req.params.id, validatedBody);
 
-		const teacher = res.locals.teacher;
-		if (!teacher.isAdmin && teacher.id !== student.teacherId) {
-			throw new UnauthorizedError();
-		}
+		const { id: studentId } = req.params;
+		const { id: teacherId, isAdmin } = res.locals.teacher;
+
+		const student = await Student.update({
+			studentId,
+			teacherId,
+			isAdmin,
+			data: validatedBody,
+		});
+
 		return res.json({ student });
 	} catch (err) {
 		if (err.name === "ValidationError") {
@@ -138,13 +143,18 @@ router.delete("/:id", loggedIn, async function (req, res, next) {
 	 * Authorization is required: admin or matching teacherId in JWT token
 	 */
 	try {
-		const student = await Student.get(req.params.id);
-		const teacher = res.locals.teacher;
-		if (!teacher.isAdmin && teacher.id !== student.teacherId) {
-			throw new UnauthorizedError();
-		}
-		await Student.delete(req.params.id);
-		return res.json({ deleted: +req.params.id });
+		const { id: studentId } = req.params;
+		const { id: teacherId, isAdmin } = res.locals.teacher;
+
+		await Student.get({
+			studentId,
+			teacherId,
+			isAdmin,
+		});
+
+		await Student.delete(studentId);
+
+		return res.json({ deleted: +studentId });
 	} catch (err) {
 		return next(err);
 	}
@@ -172,15 +182,15 @@ router.get("/:id/lessons", loggedIn, async function (req, res, next) {
 	}
 
 	try {
+		const { id: studentId } = req.params;
+		const { id: teacherId, isAdmin } = res.locals.teacher;
 		const validatedQuery = await lessonSearchSchema.validate(q);
-		const { student, lessons } = await Student.getLessons(
-			req.params.id,
-			validatedQuery
-		);
-		const teacher = res.locals.teacher;
-		if (!teacher.isAdmin && teacher.id !== student.teacherId) {
-			throw new UnauthorizedError();
-		}
+		const { student, lessons } = await Student.getLessons({
+			studentId,
+			teacherId,
+			isAdmin,
+			searchFilters: validatedQuery,
+		});
 		return res.json({ lessons });
 	} catch (err) {
 		if (err.name === "ValidationError") {
